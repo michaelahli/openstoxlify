@@ -1,1 +1,6 @@
+dist
+openstoxlify.*
+
 *.txt
+
+.pypirc
