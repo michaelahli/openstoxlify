@@ -54,9 +54,3 @@ class Quote:
 class MarketData:
     ticker: str
     quotes: list[Quote]
-
-
-# Example usage
-if __name__ == "__main__":
-    market_data = fetch("BTCUSDT", "Binance", "30m", "1mo")
-    print(market_data)
