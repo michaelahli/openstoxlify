@@ -1,5 +1,6 @@
 dist
-openstoxlify.*
+*.egg-info
+__pycache__
 
 *.txt
 

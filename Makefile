@@ -11,6 +11,7 @@ install: venv
 	$(VENV_DIR)/bin/pip install -r requirements.txt
 
 build:
+	$(VENV_DIR)/bin/pip install build twine
 	$(VENV_DIR)/bin/python -m build
 
 test:

@@ -14,7 +14,7 @@ def fetch(ticker: str, provider: str, interval: str, range_: str) -> "MarketData
     :param range_: The range of data (e.g., 1mo, 1y)
     :return: MarketData object containing quotes
     """
-    url = "https://api.stoxlify.com/v1/market/info"
+    url = "https://api.app.stoxlify.com/v1/market/info"
     headers = {"Content-Type": "application/json"}
     payload = {
         "ticker": ticker,
@@ -58,5 +58,5 @@ class MarketData:
 
 # Example usage
 if __name__ == "__main__":
-    market_data = fetch("BTC-USD", "Binance", "30m", "1mo")
+    market_data = fetch("BTCUSDT", "Binance", "30m", "1mo")
     print(market_data)
