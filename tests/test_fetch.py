@@ -1,5 +1,5 @@
 import pytest
-from stoxlify import fetch, MarketData
+from openstoxlify import fetch, MarketData
 
 
 def test_fetch():

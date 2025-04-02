@@ -14,8 +14,8 @@ def fetch(ticker: str, provider: str, interval: str, range_: str) -> "MarketData
     :param range_: The range of data (e.g., 1mo, 1y)
     :return: MarketData object containing quotes
     """
-    url = "https://api.france.stoxlify.com/v1/market/info"
-    headers = {"Content-Type": "application/json", "Accept": "*/*"}
+    url = "https://api.stoxlify.com/v1/market/info"
+    headers = {"Content-Type": "application/json"}
     payload = {
         "ticker": ticker,
         "range": range_,
