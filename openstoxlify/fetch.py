@@ -1,18 +1,12 @@
 import requests
 import json
-from dataclasses import dataclass
 from datetime import datetime
+from .models import Quote, MarketData
 
 
-def fetch(ticker: str, provider: str, interval: str, range_: str) -> "MarketData":
+def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
     """
     Fetch market data from Stoxlify API.
-
-    :param ticker: The asset ticker (e.g., BTC-USD)
-    :param provider: The data provider (e.g., Binance, YFinance)
-    :param interval: The time interval (e.g., 30m, 1h, 1d)
-    :param range_: The range of data (e.g., 1mo, 1y)
-    :return: MarketData object containing quotes
     """
     url = "https://api.app.stoxlify.com/v1/market/info"
     headers = {"Content-Type": "application/json"}
@@ -39,18 +33,3 @@ def fetch(ticker: str, provider: str, interval: str, range_: str) -> "MarketData
     ]
 
     return MarketData(ticker=ticker, quotes=quotes)
-
-
-@dataclass
-class Quote:
-    timestamp: datetime
-    high: float
-    low: float
-    open: float
-    close: float
-
-
-@dataclass
-class MarketData:
-    ticker: str
-    quotes: list[Quote]
