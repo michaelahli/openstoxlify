@@ -2,9 +2,7 @@ from datetime import datetime
 from .models import ActionType, ActionSeries
 
 # Store strategy actions
-STRATEGY_DATA = {
-    "strategy": [{"label": "strategy", "data": []}],
-}
+STRATEGY_DATA = {}
 
 
 def act(action: ActionType, timestamp: datetime):
@@ -12,4 +10,6 @@ def act(action: ActionType, timestamp: datetime):
     if "strategy" not in STRATEGY_DATA:
         STRATEGY_DATA["strategy"] = [{"label": "strategy", "data": []}]
 
-    STRATEGY_DATA["strategy"][0]["data"].append(ActionSeries(timestamp, action))
+    STRATEGY_DATA["strategy"][0]["data"].append(
+        ActionSeries(timestamp, action).to_dict()
+    )

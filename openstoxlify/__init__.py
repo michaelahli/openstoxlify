@@ -13,4 +13,4 @@ from .output import output
 from .plotter import plot, PLOT_DATA
 from .strategy import act, STRATEGY_DATA
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"

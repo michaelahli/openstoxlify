@@ -17,7 +17,7 @@ class TestStrategy(unittest.TestCase):
     def setUp(self):
         # Reset PLOT_DATA and STRATEGY_DATA before each test
         PLOT_DATA.clear()
-        STRATEGY_DATA["strategy"] = [{"label": "strategy", "data": []}]
+        STRATEGY_DATA.clear()
 
     def test_plot(self):
         # Simulate calling plot function
@@ -30,9 +30,10 @@ class TestStrategy(unittest.TestCase):
         # Check if PLOT_DATA has been updated correctly
         self.assertEqual(len(PLOT_DATA[PlotType.HISTOGRAM][0]["data"]), 1)
         self.assertEqual(
-            PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0].timestamp, timestamp
+            PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0]["timestamp"],
+            timestamp.isoformat(),
         )
-        self.assertEqual(PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0].value, value)
+        self.assertEqual(PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0]["value"], value)
 
     def test_act(self):
         timestamp = datetime(2025, 3, 26, 0, 0, 0)
@@ -43,9 +44,11 @@ class TestStrategy(unittest.TestCase):
         # Check if STRATEGY_DATA has been updated
         self.assertEqual(len(STRATEGY_DATA["strategy"][0]["data"]), 1)
         self.assertEqual(
-            STRATEGY_DATA["strategy"][0]["data"][0].action, ActionType.LONG
+            STRATEGY_DATA["strategy"][0]["data"][0]["action"], ActionType.LONG.value
         )
-        self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][0].timestamp, timestamp)
+        self.assertEqual(
+            STRATEGY_DATA["strategy"][0]["data"][0]["timestamp"], timestamp.isoformat()
+        )
 
         # Test with Action.HOLD
         act(ActionType.HOLD, timestamp)
@@ -53,9 +56,11 @@ class TestStrategy(unittest.TestCase):
         # Check if STRATEGY_DATA has been updated again
         self.assertEqual(len(STRATEGY_DATA["strategy"][0]["data"]), 2)
         self.assertEqual(
-            STRATEGY_DATA["strategy"][0]["data"][1].action, ActionType.HOLD
+            STRATEGY_DATA["strategy"][0]["data"][1]["action"], ActionType.HOLD.value
         )
-        self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][1].timestamp, timestamp)
+        self.assertEqual(
+            STRATEGY_DATA["strategy"][0]["data"][1]["timestamp"], timestamp.isoformat()
+        )
 
     @patch("builtins.print")
     def test_output(self, mock_print):

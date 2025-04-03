@@ -10,17 +10,17 @@ def output():
 
     # Process plot data (histogram, line, area)
     result["histogram"] = [
-        {"label": plot["label"], "data": [item.to_dict() for item in plot["data"]]}
+        {"label": plot["label"], "data": [item for item in plot["data"]]}
         for plot in PLOT_DATA.get(PlotType.HISTOGRAM, [])
     ]
 
     result["line"] = [
-        {"label": plot["label"], "data": [item.to_dict() for item in plot["data"]]}
+        {"label": plot["label"], "data": [item for item in plot["data"]]}
         for plot in PLOT_DATA.get(PlotType.LINE, [])
     ]
 
     result["area"] = [
-        {"label": plot["label"], "data": [item.to_dict() for item in plot["data"]]}
+        {"label": plot["label"], "data": [item for item in plot["data"]]}
         for plot in PLOT_DATA.get(PlotType.AREA, [])
     ]
 
@@ -28,7 +28,7 @@ def output():
     result["strategy"] = [
         {
             "label": entry["label"],
-            "data": [action.to_dict() for action in entry["data"]],
+            "data": [action for action in entry["data"]],
         }
         for entry in STRATEGY_DATA.get("strategy", [])
     ]
