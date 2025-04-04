@@ -53,7 +53,12 @@ class TestDrawFunction(unittest.TestCase):
         )
 
         mock_bar.assert_called_with(
-            expected_timestamp, 100, label="histogram", color="blue", width=0.5
+            [expected_timestamp],
+            [100],
+            label="histogram",
+            color="blue",
+            width=0.5,
+            alpha=0.6,
         )
 
 
