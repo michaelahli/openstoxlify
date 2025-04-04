@@ -23,7 +23,7 @@ class TestStrategy(unittest.TestCase):
         timestamp = datetime(2025, 3, 26, 0, 0, 0)
         value = 90000.0
 
-        plot(PlotType.HISTOGRAM, timestamp, value)
+        plot(PlotType.HISTOGRAM, "test_plot", timestamp, value)
 
         self.assertEqual(len(PLOT_DATA[PlotType.HISTOGRAM][0]["data"]), 1)
         self.assertEqual(
@@ -57,7 +57,7 @@ class TestStrategy(unittest.TestCase):
 
     @patch("builtins.print")
     def test_output(self, mock_print):
-        plot(PlotType.HISTOGRAM, datetime(2025, 3, 26), 90000)
+        plot(PlotType.HISTOGRAM, "test_output", datetime(2025, 3, 26), 90000)
         act(ActionType.LONG, datetime(2025, 3, 26))
 
         output()
@@ -68,7 +68,7 @@ class TestStrategy(unittest.TestCase):
             {
                 "histogram": [
                     {
-                        "label": "histogram",
+                        "label": "test_output",
                         "data": [{"timestamp": "2025-03-26T00:00:00", "value": 90000}],
                     }
                 ],

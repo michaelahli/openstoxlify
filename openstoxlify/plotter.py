@@ -4,12 +4,22 @@ from datetime import datetime
 PLOT_DATA = {}
 
 
-def plot(graph_type: PlotType, timestamp: datetime, value: float):
-    """Store data for plotting."""
+def plot(graph_type: PlotType, label: str, timestamp: datetime, value: float):
+    """Store data for plotting, organizing by label."""
     if graph_type not in PlotType:
         raise ValueError(f"Invalid graph type: {graph_type}")
 
     if graph_type not in PLOT_DATA:
-        PLOT_DATA[graph_type] = [{"label": graph_type.value, "data": []}]
+        PLOT_DATA[graph_type] = []
 
-    PLOT_DATA[graph_type][0]["data"].append(FloatSeries(timestamp, value).to_dict())
+    for plot_entry in PLOT_DATA[graph_type]:
+        if plot_entry["label"] == label:
+            plot_entry["data"].append(FloatSeries(timestamp, value).to_dict())
+            return
+
+    PLOT_DATA[graph_type].append(
+        {
+            "label": label or graph_type.value,
+            "data": [FloatSeries(timestamp, value).to_dict()],
+        }
+    )
