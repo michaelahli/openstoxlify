@@ -1,7 +1,6 @@
 from datetime import datetime
 from .models import ActionType, ActionSeries
 
-# Store strategy actions
 STRATEGY_DATA = {}
 
 

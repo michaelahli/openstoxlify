@@ -7,6 +7,7 @@ class PlotType(Enum):
     HISTOGRAM = "histogram"
     LINE = "line"
     AREA = "area"
+    CANDLESTICK = "candlestick"
 
 
 @dataclass

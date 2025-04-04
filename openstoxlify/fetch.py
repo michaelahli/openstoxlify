@@ -1,7 +1,10 @@
 import requests
 import json
+
 from datetime import datetime
 from .models import Quote, MarketData
+
+CANDLESTICK_DATA = []
 
 
 def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
@@ -31,5 +34,17 @@ def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
         )
         for q in data["quote"]
     ]
+
+    CANDLESTICK_DATA.clear()
+    for quote in quotes:
+        CANDLESTICK_DATA.append(
+            {
+                "timestamp": quote.timestamp,
+                "open": quote.open,
+                "high": quote.high,
+                "low": quote.low,
+                "close": quote.close,
+            }
+        )
 
     return MarketData(ticker=ticker, quotes=quotes)

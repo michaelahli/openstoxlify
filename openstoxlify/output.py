@@ -8,7 +8,6 @@ def output():
     """Generate the final output as JSON."""
     result = {}
 
-    # Process plot data (histogram, line, area)
     result["histogram"] = [
         {"label": plot["label"], "data": [item for item in plot["data"]]}
         for plot in PLOT_DATA.get(PlotType.HISTOGRAM, [])
@@ -24,7 +23,6 @@ def output():
         for plot in PLOT_DATA.get(PlotType.AREA, [])
     ]
 
-    # Process strategy data (e.g., actions)
     result["strategy"] = [
         {
             "label": entry["label"],
@@ -33,5 +31,4 @@ def output():
         for entry in STRATEGY_DATA.get("strategy", [])
     ]
 
-    # Print the result as JSON
     print(json.dumps(result))
