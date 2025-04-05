@@ -1,7 +1,8 @@
 dist
-*.egg-info
+build
 __pycache__
 
 *.txt
+*.egg-info
 
 .pypirc

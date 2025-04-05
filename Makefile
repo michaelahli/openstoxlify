@@ -22,3 +22,6 @@ upload:
 
 clean:
 	rm -rf $(VENV_DIR) dist build *.egg-info
+
+setup: venv install
+	$(VENV_DIR)/bin/python setup.py install
