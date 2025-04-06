@@ -1,25 +1,33 @@
 import unittest
 import matplotlib.dates as mdates
+
 from unittest.mock import patch, ANY
 from datetime import datetime
-from openstoxlify.models import PlotType
+from openstoxlify.models import PlotType, ActionType
 from openstoxlify.draw import draw
 from openstoxlify.plotter import PLOT_DATA
+from openstoxlify.fetch import CANDLESTICK_DATA
+from openstoxlify.strategy import STRATEGY_DATA
 
 
 class TestDrawFunction(unittest.TestCase):
     @patch("matplotlib.pyplot.show")
+    @patch("matplotlib.axes.Axes.vlines")
     @patch("matplotlib.axes.Axes.plot")
     @patch("matplotlib.axes.Axes.bar")
     @patch("matplotlib.axes.Axes.fill_between")
-    @patch("matplotlib.pyplot.vlines")
-    def test_draw(self, mock_vlines, mock_fill_between, mock_bar, mock_plot, mock_show):
-        """Test the draw function to ensure that plotting methods are called correctly."""
+    def test_draw(self, mock_fill_between, mock_bar, mock_plot, mock_vlines, mock_show):
+        """Test the draw function to ensure plotting methods are called with expected data."""
 
-        timestamp = datetime(2025, 3, 26, 0, 0, 0)
-        expected_timestamp = mdates.date2num(timestamp)
+        timestamp = datetime(2025, 3, 26)
+        expected_ts_num = mdates.date2num(timestamp)
 
-        # Populate PLOT_DATA with test values
+        # Reset global state before each run
+        PLOT_DATA.clear()
+        CANDLESTICK_DATA.clear()
+        STRATEGY_DATA.clear()
+
+        # Populate PLOT_DATA
         PLOT_DATA[PlotType.HISTOGRAM] = [
             {"label": "histogram", "data": [{"timestamp": timestamp, "value": 100}]}
         ]
@@ -30,21 +38,45 @@ class TestDrawFunction(unittest.TestCase):
             {"label": "area", "data": [{"timestamp": timestamp, "value": 300}]}
         ]
 
+        # Populate CANDLESTICK_DATA
+        CANDLESTICK_DATA.append(
+            {"timestamp": timestamp, "open": 100, "close": 200, "low": 50, "high": 250}
+        )
+
+        # Populate STRATEGY_DATA with a LONG action
+        STRATEGY_DATA["strategy"] = [
+            {"data": [{"timestamp": timestamp, "action": ActionType.LONG.value}]}
+        ]
+
         draw()
 
-        mock_plot.assert_called_with(
-            [expected_timestamp], [200], label="line", color=ANY, lw=2
-        )
+        # Check plotting calls
         mock_bar.assert_called_with(
-            [expected_timestamp],
+            [expected_ts_num],
             [100],
             label="histogram",
             color=ANY,
             width=0.5,
             alpha=0.6,
         )
+
+        mock_plot.assert_any_call(
+            [expected_ts_num], [200], label="line", color=ANY, lw=2
+        )
+
         mock_fill_between.assert_called_with(
-            [expected_timestamp], [300], label="area", color=ANY, alpha=0.3
+            [expected_ts_num], [300], label="area", color=ANY, alpha=0.3
+        )
+
+        # Check that LONG marker was plotted with an offset (price - offset)
+        offset_price = 200 - (200 * 0.2)
+        mock_plot.assert_any_call(
+            expected_ts_num,
+            offset_price,
+            marker="^",
+            color="blue",
+            markersize=8,
+            label="LONG",
         )
 
 

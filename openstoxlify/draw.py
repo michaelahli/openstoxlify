@@ -1,11 +1,12 @@
+import random
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import random
 
 from datetime import datetime
-from .models import PlotType
+from .models import PlotType, ActionType
 from .plotter import PLOT_DATA
 from .fetch import CANDLESTICK_DATA
+from .strategy import STRATEGY_DATA
 
 COLOR_PALETTE = [
     "#1f77b4",
@@ -35,7 +36,6 @@ def draw():
     fig, ax = plt.subplots(figsize=(12, 6))
 
     def convert_timestamp(timestamp):
-        """Convert timestamp to matplotlib date format."""
         if isinstance(timestamp, str):
             return mdates.date2num(datetime.fromisoformat(timestamp))
         return mdates.date2num(timestamp)
@@ -86,11 +86,48 @@ def draw():
             alpha=0.3,
         )
 
+    candle_lut = {}
     for item in CANDLESTICK_DATA:
-        timestamp_numeric = convert_timestamp(item["timestamp"])
+        timestamp = item["timestamp"]
+        ts_str = timestamp if isinstance(timestamp, str) else timestamp.isoformat()
+        ts_num = convert_timestamp(timestamp)
+        price = item["close"]
+
         color = "green" if item["close"] > item["open"] else "red"
-        ax.vlines(timestamp_numeric, item["low"], item["high"], color=color, lw=1)
-        ax.vlines(timestamp_numeric, item["open"], item["close"], color=color, lw=4)
+        ax.vlines(ts_num, item["low"], item["high"], color=color, lw=1)
+        ax.vlines(ts_num, item["open"], item["close"], color=color, lw=4)
+
+        candle_lut[ts_str] = (ts_num, price)
+
+    plotted_labels = set()
+
+    def plot_arrow(ts, y, marker, color, label):
+        display_label = label if label not in plotted_labels else "_nolegend_"
+        plotted_labels.add(label)
+        ax.plot(ts, y, marker=marker, color=color, markersize=8, label=display_label)
+
+    for strategy in STRATEGY_DATA.get("strategy", []):
+        for trade in strategy.get("data", []):
+            if "timestamp" not in trade:
+                continue
+
+            ts_key = (
+                trade["timestamp"]
+                if isinstance(trade["timestamp"], str)
+                else trade["timestamp"].isoformat()
+            )
+
+            if ts_key not in candle_lut:
+                continue
+
+            ts_num, price = candle_lut[ts_key]
+            offset = price * 0.2
+            direction = trade.get("action") or trade.get("value")
+
+            if direction == ActionType.LONG.value:
+                plot_arrow(ts_num, price - offset, "^", "blue", "LONG")
+            elif direction == ActionType.SHORT.value:
+                plot_arrow(ts_num, price + offset, "v", "purple", "SHORT")
 
     ax.set_xlabel("Date")
     ax.set_ylabel("Price")
