@@ -1,8 +1,9 @@
 import unittest
-import matplotlib.dates as mdates
 
+import matplotlib.dates as mdates
 from unittest.mock import patch, ANY
 from datetime import datetime
+
 from openstoxlify.models import PlotType, ActionType
 from openstoxlify.draw import draw
 from openstoxlify.plotter import PLOT_DATA
@@ -22,12 +23,10 @@ class TestDrawFunction(unittest.TestCase):
         timestamp = datetime(2025, 3, 26)
         expected_ts_num = mdates.date2num(timestamp)
 
-        # Reset global state before each run
         PLOT_DATA.clear()
         CANDLESTICK_DATA.clear()
         STRATEGY_DATA.clear()
 
-        # Populate PLOT_DATA
         PLOT_DATA[PlotType.HISTOGRAM] = [
             {"label": "histogram", "data": [{"timestamp": timestamp, "value": 100}]}
         ]
@@ -38,19 +37,16 @@ class TestDrawFunction(unittest.TestCase):
             {"label": "area", "data": [{"timestamp": timestamp, "value": 300}]}
         ]
 
-        # Populate CANDLESTICK_DATA
         CANDLESTICK_DATA.append(
             {"timestamp": timestamp, "open": 100, "close": 200, "low": 50, "high": 250}
         )
 
-        # Populate STRATEGY_DATA with a LONG action
         STRATEGY_DATA["strategy"] = [
             {"data": [{"timestamp": timestamp, "action": ActionType.LONG.value}]}
         ]
 
         draw()
 
-        # Check plotting calls
         mock_bar.assert_called_with(
             [expected_ts_num],
             [100],
@@ -68,8 +64,7 @@ class TestDrawFunction(unittest.TestCase):
             [expected_ts_num], [300], label="area", color=ANY, alpha=0.3
         )
 
-        # Check that LONG marker was plotted with an offset (price - offset)
-        offset_price = 200 - (200 * 0.2)
+        offset_price = 200 - (200 * 0.1)
         mock_plot.assert_any_call(
             expected_ts_num,
             offset_price,

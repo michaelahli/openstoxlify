@@ -1,5 +1,6 @@
-from openstoxlify.models import MarketData, PlotType, ActionType
 from datetime import datetime
+
+from openstoxlify.models import MarketData, PlotType, ActionType
 from openstoxlify.plotter import plot
 from openstoxlify.fetch import fetch
 from openstoxlify.draw import draw
@@ -7,7 +8,7 @@ from openstoxlify.strategy import act
 
 
 def fetch_market_data(symbol: str) -> MarketData:
-    return fetch(symbol, "Binance", "1wk", "1mo")
+    return fetch(symbol, "YFinance", "1d", "6mo")
 
 
 def calculate_sma(market_data: MarketData, window: int) -> list[tuple[datetime, float]]:
@@ -52,15 +53,15 @@ def generate_strategy_signals(
             act(ActionType.HOLD, timestamp)
 
 
-market_data = fetch_market_data("BTCUSDT")
+market_data = fetch_market_data("BTC-USD")
 
+sma_9 = calculate_sma(market_data, window=9)
 sma_14 = calculate_sma(market_data, window=14)
 sma_50 = calculate_sma(market_data, window=50)
-sma_200 = calculate_sma(market_data, window=200)
 
+plot_sma(sma_9, label="SMA 9")
 plot_sma(sma_14, label="SMA 14")
 plot_sma(sma_50, label="SMA 50")
-plot_sma(sma_200, label="SMA 200")
 
 generate_strategy_signals(sma_14, sma_50)
 draw()

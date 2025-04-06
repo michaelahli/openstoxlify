@@ -1,8 +1,10 @@
 import random
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from datetime import datetime
+
 from .models import PlotType, ActionType
 from .plotter import PLOT_DATA
 from .fetch import CANDLESTICK_DATA
@@ -121,7 +123,7 @@ def draw():
                 continue
 
             ts_num, price = candle_lut[ts_key]
-            offset = price * 0.2
+            offset = price * 0.1
             direction = trade.get("action") or trade.get("value")
 
             if direction == ActionType.LONG.value:

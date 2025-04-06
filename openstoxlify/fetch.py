@@ -2,6 +2,7 @@ import requests
 import json
 
 from datetime import datetime
+
 from .models import Quote, MarketData
 
 CANDLESTICK_DATA = []
@@ -9,7 +10,7 @@ CANDLESTICK_DATA = []
 
 def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
     """
-    Fetch market data from Stoxlify API.
+    Fetch market data from Stoxlify API and safely handle missing price data.
     """
     url = "https://api.app.stoxlify.com/v1/market/info"
     headers = {"Content-Type": "application/json"}
@@ -24,16 +25,26 @@ def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
     response.raise_for_status()
     data = response.json()
 
-    quotes = [
-        Quote(
-            timestamp=datetime.fromisoformat(q["timestamp"].replace("Z", "+00:00")),
-            high=q["product_info"]["price"]["high"],
-            low=q["product_info"]["price"]["low"],
-            open=q["product_info"]["price"]["open"],
-            close=q["product_info"]["price"]["close"],
-        )
-        for q in data["quote"]
-    ]
+    quotes = []
+    for q in data.get("quote", []):
+        try:
+            ts = datetime.fromisoformat(q["timestamp"].replace("Z", "+00:00"))
+            price = q["product_info"]["price"]
+
+            if not all(k in price for k in ("open", "high", "low", "close")):
+                continue
+
+            quote = Quote(
+                timestamp=ts,
+                high=price["high"],
+                low=price["low"],
+                open=price["open"],
+                close=price["close"],
+            )
+            quotes.append(quote)
+
+        except (KeyError, TypeError, ValueError):
+            continue
 
     CANDLESTICK_DATA.clear()
     for quote in quotes:
