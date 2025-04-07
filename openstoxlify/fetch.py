@@ -3,21 +3,35 @@ import json
 
 from datetime import datetime
 
-from .models import Quote, MarketData
+from .models import Period, Provider, Quote, MarketData
 
 CANDLESTICK_DATA = []
 
+PERIOD_MAPPING = {
+    Period.DAILY: {"interval": "1d", "range": "1y"},
+    Period.WEEKLY: {"interval": "1wk", "range": "10y"},
+    Period.MONTHLY: {"interval": "1mo", "range": "max"},
+}
 
-def fetch(ticker: str, provider: str, interval: str, range_: str) -> MarketData:
+
+def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
     """
     Fetch market data from Stoxlify API and safely handle missing price data.
     """
+    if period not in PERIOD_MAPPING:
+        raise ValueError(
+            f"Invalid period '{period}'. Expected one of {list(PERIOD_MAPPING.keys())}."
+        )
+
+    interval = PERIOD_MAPPING[period]["interval"]
+    time_range = PERIOD_MAPPING[period]["range"]
+
     url = "https://api.app.stoxlify.com/v1/market/info"
     headers = {"Content-Type": "application/json"}
     payload = {
         "ticker": ticker,
-        "range": range_,
-        "source": provider,
+        "range": time_range,
+        "source": provider.value,
         "interval": interval,
         "indicator": "quote",
     }

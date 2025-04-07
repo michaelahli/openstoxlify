@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from openstoxlify.models import MarketData, PlotType, ActionType
+from openstoxlify.models import MarketData, Period, PlotType, ActionType, Provider
 from openstoxlify.plotter import plot
 from openstoxlify.fetch import fetch
 from openstoxlify.draw import draw
@@ -8,7 +8,7 @@ from openstoxlify.strategy import act
 
 
 def fetch_market_data(symbol: str) -> MarketData:
-    return fetch(symbol, "YFinance", "1d", "6mo")
+    return fetch(symbol, Provider.YFinance, Period.DAILY)
 
 
 def calculate_sma(market_data: MarketData, window: int) -> list[tuple[datetime, float]]:

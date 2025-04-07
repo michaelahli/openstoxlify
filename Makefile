@@ -14,7 +14,7 @@ build:
 	$(VENV_DIR)/bin/pip install build twine
 	$(VENV_DIR)/bin/python -m build
 
-test:
+test: venv install build
 	$(VENV_DIR)/bin/python -m pytest tests/
 
 upload:

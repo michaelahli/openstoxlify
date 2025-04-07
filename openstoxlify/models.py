@@ -10,6 +10,23 @@ class PlotType(Enum):
     CANDLESTICK = "candlestick"
 
 
+class ActionType(Enum):
+    LONG = "Long"
+    HOLD = "Hold"
+    SHORT = "Short"
+
+
+class Period(Enum):
+    DAILY = "D"
+    WEEKLY = "W"
+    MONTHLY = "M"
+
+
+class Provider(Enum):
+    YFinance = "YFinance"
+    Binance = "Binance"
+
+
 @dataclass
 class Quote:
     timestamp: datetime
@@ -32,12 +49,6 @@ class FloatSeries:
 
     def to_dict(self):
         return {"timestamp": self.timestamp.isoformat(), "value": self.value}
-
-
-class ActionType(Enum):
-    LONG = "Long"
-    HOLD = "Hold"
-    SHORT = "Short"
 
 
 @dataclass
