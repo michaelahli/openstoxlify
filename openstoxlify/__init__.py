@@ -1,4 +1,4 @@
-from .fetch import fetch, CANDLESTICK_DATA
+from .fetch import fetch, MARKET_DATA
 
 from .models import (
     MarketData,
@@ -16,4 +16,4 @@ from .plotter import plot, PLOT_DATA
 from .strategy import act, STRATEGY_DATA
 from .draw import draw
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"

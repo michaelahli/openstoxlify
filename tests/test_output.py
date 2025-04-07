@@ -12,12 +12,18 @@ from openstoxlify import (
     PLOT_DATA,
     output,
 )
+from openstoxlify.fetch import MARKET_DATA
+from openstoxlify.models import MarketData, Period, Provider
 
 
 class TestStrategy(unittest.TestCase):
     def setUp(self):
         PLOT_DATA.clear()
         STRATEGY_DATA.clear()
+        MARKET_DATA.ticker = ""
+        MARKET_DATA.period = Period.DAILY
+        MARKET_DATA.provider = Provider.YFinance
+        MARKET_DATA.quotes = []
 
     def test_plot(self):
         timestamp = datetime(2025, 3, 26, 0, 0, 0)
@@ -57,6 +63,7 @@ class TestStrategy(unittest.TestCase):
 
     @patch("builtins.print")
     def test_output(self, mock_print):
+        self.maxDiff = None
         plot(PlotType.HISTOGRAM, "test_output", datetime(2025, 3, 26), 90000)
         act(ActionType.LONG, datetime(2025, 3, 26))
 
@@ -82,6 +89,12 @@ class TestStrategy(unittest.TestCase):
                         ],
                     }
                 ],
+                "quotes": {
+                    "ticker": "",
+                    "period": "D",
+                    "provider": "YFinance",
+                    "data": [],
+                },
             }
         )
 

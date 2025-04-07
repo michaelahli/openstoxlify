@@ -2,6 +2,7 @@ import json
 from .plotter import PLOT_DATA
 from .strategy import STRATEGY_DATA
 from .models import PlotType
+from .fetch import MARKET_DATA
 
 
 def output():
@@ -30,5 +31,21 @@ def output():
         }
         for entry in STRATEGY_DATA.get("strategy", [])
     ]
+
+    result["quotes"] = {
+        "ticker": MARKET_DATA.ticker,
+        "period": MARKET_DATA.period.value,
+        "provider": MARKET_DATA.provider.value,
+        "data": [
+            {
+                "timestamp": quote.timestamp.isoformat(),
+                "open": quote.open,
+                "high": quote.high,
+                "low": quote.low,
+                "close": quote.close,
+            }
+            for quote in MARKET_DATA.quotes
+        ],
+    }
 
     print(json.dumps(result))

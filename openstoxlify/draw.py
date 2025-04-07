@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .models import PlotType, ActionType
 from .plotter import PLOT_DATA
-from .fetch import CANDLESTICK_DATA
+from .fetch import MARKET_DATA
 from .strategy import STRATEGY_DATA
 
 COLOR_PALETTE = [
@@ -34,7 +34,7 @@ def get_color(label):
 
 
 def draw():
-    """Draw all charts from the PLOT_DATA and CANDLESTICK_DATA."""
+    """Draw all charts from the PLOT_DATA and MARKET_DATA."""
     fig, ax = plt.subplots(figsize=(12, 6))
 
     def convert_timestamp(timestamp):
@@ -89,15 +89,15 @@ def draw():
         )
 
     candle_lut = {}
-    for item in CANDLESTICK_DATA:
-        timestamp = item["timestamp"]
+    for item in MARKET_DATA.quotes:
+        timestamp = item.timestamp
         ts_str = timestamp if isinstance(timestamp, str) else timestamp.isoformat()
         ts_num = convert_timestamp(timestamp)
-        price = item["close"]
+        price = item.close
 
-        color = "green" if item["close"] > item["open"] else "red"
-        ax.vlines(ts_num, item["low"], item["high"], color=color, lw=1)
-        ax.vlines(ts_num, item["open"], item["close"], color=color, lw=4)
+        color = "green" if item.close > item.open else "red"
+        ax.vlines(ts_num, item.low, item.high, color=color, lw=1)
+        ax.vlines(ts_num, item.open, item.close, color=color, lw=4)
 
         candle_lut[ts_str] = (ts_num, price)
 

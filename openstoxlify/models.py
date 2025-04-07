@@ -39,6 +39,8 @@ class Quote:
 @dataclass
 class MarketData:
     ticker: str
+    period: Period
+    provider: Provider
     quotes: list[Quote]
 
 

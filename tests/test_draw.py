@@ -4,10 +4,10 @@ import matplotlib.dates as mdates
 from unittest.mock import patch, ANY
 from datetime import datetime
 
-from openstoxlify.models import PlotType, ActionType
+from openstoxlify.models import PlotType, ActionType, Quote
 from openstoxlify.draw import draw
 from openstoxlify.plotter import PLOT_DATA
-from openstoxlify.fetch import CANDLESTICK_DATA
+from openstoxlify.fetch import MARKET_DATA
 from openstoxlify.strategy import STRATEGY_DATA
 
 
@@ -24,7 +24,6 @@ class TestDrawFunction(unittest.TestCase):
         expected_ts_num = mdates.date2num(timestamp)
 
         PLOT_DATA.clear()
-        CANDLESTICK_DATA.clear()
         STRATEGY_DATA.clear()
 
         PLOT_DATA[PlotType.HISTOGRAM] = [
@@ -37,8 +36,8 @@ class TestDrawFunction(unittest.TestCase):
             {"label": "area", "data": [{"timestamp": timestamp, "value": 300}]}
         ]
 
-        CANDLESTICK_DATA.append(
-            {"timestamp": timestamp, "open": 100, "close": 200, "low": 50, "high": 250}
+        MARKET_DATA.quotes.append(
+            Quote(timestamp=timestamp, open=100, close=200, low=50, high=250)
         )
 
         STRATEGY_DATA["strategy"] = [

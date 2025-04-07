@@ -5,7 +5,9 @@ from datetime import datetime
 
 from .models import Period, Provider, Quote, MarketData
 
-CANDLESTICK_DATA = []
+MARKET_DATA: MarketData = MarketData(
+    ticker="", period=Period.DAILY, provider=Provider.YFinance, quotes=[]
+)
 
 PERIOD_MAPPING = {
     Period.DAILY: {"interval": "1d", "range": "1y"},
@@ -18,6 +20,7 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
     """
     Fetch market data from Stoxlify API and safely handle missing price data.
     """
+    global MARKET_DATA
     if period not in PERIOD_MAPPING:
         raise ValueError(
             f"Invalid period '{period}'. Expected one of {list(PERIOD_MAPPING.keys())}."
@@ -35,6 +38,7 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
         "interval": interval,
         "indicator": "quote",
     }
+
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     response.raise_for_status()
     data = response.json()
@@ -60,16 +64,9 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
         except (KeyError, TypeError, ValueError):
             continue
 
-    CANDLESTICK_DATA.clear()
-    for quote in quotes:
-        CANDLESTICK_DATA.append(
-            {
-                "timestamp": quote.timestamp,
-                "open": quote.open,
-                "high": quote.high,
-                "low": quote.low,
-                "close": quote.close,
-            }
-        )
+    MARKET_DATA.ticker = ticker
+    MARKET_DATA.period = period
+    MARKET_DATA.provider = provider
+    MARKET_DATA.quotes = quotes
 
-    return MarketData(ticker=ticker, quotes=quotes)
+    return MARKET_DATA
