@@ -91,7 +91,7 @@ class TestStrategy(unittest.TestCase):
                 ],
                 "quotes": {
                     "ticker": "",
-                    "period": "D",
+                    "interval": "1d",
                     "provider": "YFinance",
                     "data": [],
                 },

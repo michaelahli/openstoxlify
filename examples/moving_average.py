@@ -4,6 +4,7 @@ from openstoxlify.models import MarketData, Period, PlotType, ActionType, Provid
 from openstoxlify.plotter import plot
 from openstoxlify.fetch import fetch
 from openstoxlify.draw import draw
+from openstoxlify.output import output
 from openstoxlify.strategy import act
 
 
@@ -64,4 +65,4 @@ plot_sma(sma_14, label="SMA 14")
 plot_sma(sma_50, label="SMA 50")
 
 generate_strategy_signals(sma_14, sma_50)
-draw()
+output()

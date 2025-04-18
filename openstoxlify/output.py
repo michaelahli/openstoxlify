@@ -2,7 +2,7 @@ import json
 from .plotter import PLOT_DATA
 from .strategy import STRATEGY_DATA
 from .models import PlotType
-from .fetch import MARKET_DATA
+from .fetch import MARKET_DATA, PERIOD_MAPPING
 
 
 def output():
@@ -34,7 +34,7 @@ def output():
 
     result["quotes"] = {
         "ticker": MARKET_DATA.ticker,
-        "period": MARKET_DATA.period.value,
+        "interval": PERIOD_MAPPING[MARKET_DATA.period]["interval"],
         "provider": MARKET_DATA.provider.value,
         "data": [
             {
