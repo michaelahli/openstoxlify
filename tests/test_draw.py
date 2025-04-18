@@ -37,7 +37,7 @@ class TestDrawFunction(unittest.TestCase):
         ]
 
         MARKET_DATA.quotes.append(
-            Quote(timestamp=timestamp, open=100, close=200, low=50, high=250)
+            Quote(timestamp=timestamp, open=100, close=200, low=50, high=250, volume=10)
         )
 
         STRATEGY_DATA["strategy"] = [

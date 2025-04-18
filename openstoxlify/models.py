@@ -34,6 +34,7 @@ class Quote:
     low: float
     open: float
     close: float
+    volume: float
 
 
 @dataclass

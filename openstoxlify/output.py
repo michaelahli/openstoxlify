@@ -43,6 +43,7 @@ def output():
                 "high": quote.high,
                 "low": quote.low,
                 "close": quote.close,
+                "volume": quote.volume,
             }
             for quote in MARKET_DATA.quotes
         ],

@@ -13,7 +13,7 @@ from openstoxlify import (
     output,
 )
 from openstoxlify.fetch import MARKET_DATA
-from openstoxlify.models import MarketData, Period, Provider
+from openstoxlify.models import Period, Provider
 
 
 class TestStrategy(unittest.TestCase):

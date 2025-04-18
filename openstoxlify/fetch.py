@@ -58,6 +58,7 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
                 low=price["low"],
                 open=price["open"],
                 close=price["close"],
+                volume=price["volume"],
             )
             quotes.append(quote)
 
