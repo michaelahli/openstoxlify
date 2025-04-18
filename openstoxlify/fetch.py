@@ -1,8 +1,6 @@
 import requests
 import json
-
 from datetime import datetime
-
 from .models import Period, Provider, Quote, MarketData
 
 MARKET_DATA: MarketData = MarketData(
@@ -17,10 +15,8 @@ PERIOD_MAPPING = {
 
 
 def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
-    """
-    Fetch market data from Stoxlify API and safely handle missing price data.
-    """
     global MARKET_DATA
+
     if period not in PERIOD_MAPPING:
         raise ValueError(
             f"Invalid period '{period}'. Expected one of {list(PERIOD_MAPPING.keys())}."
@@ -39,9 +35,24 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
         "indicator": "quote",
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+    except requests.RequestException as req_err:
+        raise RuntimeError(f"Request failed: {req_err}") from req_err
+
+    if not response.ok:
+        try:
+            error_info = response.json()
+            raise RuntimeError(
+                f"HTTP {response.status_code} - {error_info.get('message', 'Unknown error')}"
+            )
+        except ValueError:
+            raise RuntimeError(f"HTTP {response.status_code} - {response.text}")
+
+    try:
+        data = response.json()
+    except ValueError as json_err:
+        raise RuntimeError(f"JSON parsing error: {json_err}") from json_err
 
     quotes = []
     for q in data.get("quote", []):
