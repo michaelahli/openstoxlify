@@ -41,15 +41,16 @@ class TestStrategy(unittest.TestCase):
     def test_act(self):
         timestamp = datetime(2025, 3, 26, 0, 0, 0)
 
-        act(ActionType.LONG, timestamp)
+        act(ActionType.LONG, timestamp, 1)
 
-        self.assertEqual(len(STRATEGY_DATA["strategy"][0]["data"]), 1)
+        self.assertEqual(len(STRATEGY_DATA["strategy"][0]["data"]), 1.0)
         self.assertEqual(
             STRATEGY_DATA["strategy"][0]["data"][0]["action"], ActionType.LONG.value
         )
         self.assertEqual(
             STRATEGY_DATA["strategy"][0]["data"][0]["timestamp"], timestamp.isoformat()
         )
+        self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][0]["amount"], 1.0)
 
         act(ActionType.HOLD, timestamp)
 
@@ -60,12 +61,13 @@ class TestStrategy(unittest.TestCase):
         self.assertEqual(
             STRATEGY_DATA["strategy"][0]["data"][1]["timestamp"], timestamp.isoformat()
         )
+        self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][1]["amount"], 0.0)
 
     @patch("builtins.print")
     def test_output(self, mock_print):
         self.maxDiff = None
         plot(PlotType.HISTOGRAM, "test_output", datetime(2025, 3, 26), 90000)
-        act(ActionType.LONG, datetime(2025, 3, 26))
+        act(ActionType.LONG, datetime(2025, 3, 26), 1.0)
 
         output()
 
@@ -85,7 +87,11 @@ class TestStrategy(unittest.TestCase):
                     {
                         "label": "strategy",
                         "data": [
-                            {"timestamp": "2025-03-26T00:00:00", "action": "Long"}
+                            {
+                                "timestamp": "2025-03-26T00:00:00",
+                                "action": "Long",
+                                "amount": 1.0,
+                            }
                         ],
                     }
                 ],

@@ -1,10 +1,8 @@
 import random
-
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from datetime import datetime
-
 from .models import PlotType, ActionType
 from .plotter import PLOT_DATA
 from .fetch import MARKET_DATA
@@ -47,11 +45,11 @@ def draw():
         timestamps = [convert_timestamp(item["timestamp"]) for item in plot["data"]]
         values = [item["value"] for item in plot["data"]]
 
-        if len(timestamps) > 1:
-            bar_width = (max(timestamps) - min(timestamps)) / len(timestamps) * 0.8
-        else:
-            bar_width = 0.5
-
+        bar_width = (
+            (max(timestamps) - min(timestamps)) / len(timestamps) * 0.8
+            if len(timestamps) > 1
+            else 0.5
+        )
         label = (
             plot["label"] if plot["label"] not in plotted_histograms else "_nolegend_"
         )
@@ -101,13 +99,6 @@ def draw():
 
         candle_lut[ts_str] = (ts_num, price)
 
-    plotted_labels = set()
-
-    def plot_arrow(ts, y, marker, color, label):
-        display_label = label if label not in plotted_labels else "_nolegend_"
-        plotted_labels.add(label)
-        ax.plot(ts, y, marker=marker, color=color, markersize=8, label=display_label)
-
     for strategy in STRATEGY_DATA.get("strategy", []):
         for trade in strategy.get("data", []):
             if "timestamp" not in trade:
@@ -125,11 +116,32 @@ def draw():
             ts_num, price = candle_lut[ts_key]
             offset = price * 0.05
             direction = trade.get("action") or trade.get("value")
+            amount = trade.get("amount", 0.0)
 
             if direction == ActionType.LONG.value:
-                plot_arrow(ts_num, price - offset, "^", "blue", "LONG")
+                y = price - offset
+                ax.plot(ts_num, y, marker="^", color="blue", markersize=8)
+                ax.annotate(
+                    f"LONG {amount}",
+                    xy=(ts_num, y),
+                    xytext=(0, -15),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=9,
+                    color="blue",
+                )
             elif direction == ActionType.SHORT.value:
-                plot_arrow(ts_num, price + offset, "v", "purple", "SHORT")
+                y = price + offset
+                ax.plot(ts_num, y, marker="v", color="purple", markersize=8)
+                ax.annotate(
+                    f"SHORT {amount}",
+                    xy=(ts_num, y),
+                    xytext=(0, 10),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=9,
+                    color="purple",
+                )
 
     ax.set_xlabel("Date")
     ax.set_ylabel("Price")
@@ -139,6 +151,5 @@ def draw():
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.xticks(rotation=30, ha="right")
-
     plt.tight_layout()
     plt.show()

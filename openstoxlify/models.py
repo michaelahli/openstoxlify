@@ -62,9 +62,14 @@ class FloatSeries:
 class ActionSeries:
     timestamp: datetime
     action: ActionType
+    amount: float = 0.0
 
     def to_dict(self):
-        return {"timestamp": self.timestamp.isoformat(), "action": self.action.value}
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "action": self.action.value,
+            "amount": self.amount,
+        }
 
 
 @dataclass

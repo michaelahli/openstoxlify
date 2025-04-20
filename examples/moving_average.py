@@ -39,19 +39,19 @@ def generate_strategy_signals(
     slow_dict = dict(sma_slow)
     last_action = ActionType.HOLD
 
+    cnt = 1
     for timestamp, fast_value in sma_fast:
         slow_value = slow_dict.get(timestamp)
         if slow_value is None:
             continue
 
+        cnt = cnt + 1
         if fast_value > slow_value and last_action != ActionType.LONG:
-            act(ActionType.LONG, timestamp)
+            act(ActionType.LONG, timestamp, 2 * cnt)
             last_action = ActionType.LONG
         elif fast_value < slow_value and last_action != ActionType.SHORT:
-            act(ActionType.SHORT, timestamp)
+            act(ActionType.SHORT, timestamp, 1 * cnt)
             last_action = ActionType.SHORT
-        else:
-            act(ActionType.HOLD, timestamp)
 
 
 market_data = fetch_market_data("BTC-USD")
@@ -65,4 +65,4 @@ plot_sma(sma_14, label="SMA 14")
 plot_sma(sma_50, label="SMA 50")
 
 generate_strategy_signals(sma_14, sma_50)
-output()
+draw()
