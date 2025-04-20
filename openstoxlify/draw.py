@@ -123,7 +123,7 @@ def draw():
                 continue
 
             ts_num, price = candle_lut[ts_key]
-            offset = price * 0.1
+            offset = price * 0.05
             direction = trade.get("action") or trade.get("value")
 
             if direction == ActionType.LONG.value:

@@ -16,4 +16,4 @@ from .plotter import plot, PLOT_DATA
 from .strategy import act, STRATEGY_DATA
 from .draw import draw
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"

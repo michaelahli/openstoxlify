@@ -8,6 +8,10 @@ MARKET_DATA: MarketData = MarketData(
 )
 
 PERIOD_MAPPING = {
+    Period.MINUTELY: {"interval": "1m", "range": "1wk"},
+    Period.QUINTLY: {"interval": "5m", "range": "1wk"},
+    Period.HALFHOURLY: {"interval": "30m", "range": "1wk"},
+    Period.HOURLY: {"interval": "60m", "range": "1wk"},
     Period.DAILY: {"interval": "1d", "range": "1y"},
     Period.WEEKLY: {"interval": "1wk", "range": "10y"},
     Period.MONTHLY: {"interval": "1mo", "range": "max"},

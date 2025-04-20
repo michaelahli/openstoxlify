@@ -17,6 +17,10 @@ class ActionType(Enum):
 
 
 class Period(Enum):
+    MINUTELY = "1m"
+    QUINTLY = "5m"
+    HALFHOURLY = "30m"
+    HOURLY = "60m"
     DAILY = "D"
     WEEKLY = "W"
     MONTHLY = "M"

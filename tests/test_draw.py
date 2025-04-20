@@ -63,7 +63,7 @@ class TestDrawFunction(unittest.TestCase):
             [expected_ts_num], [300], label="area", color=ANY, alpha=0.3
         )
 
-        offset_price = 200 - (200 * 0.1)
+        offset_price = 200 - (200 * 0.05)
         mock_plot.assert_any_call(
             expected_ts_num,
             offset_price,
