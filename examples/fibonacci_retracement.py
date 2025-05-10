@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from openstoxlify.draw import draw
 from openstoxlify.models import MarketData, Period, PlotType, ActionType, Provider
 from openstoxlify.plotter import plot
@@ -7,7 +7,7 @@ from openstoxlify.strategy import act
 
 
 def fetch_market_data(symbol: str) -> MarketData:
-    return fetch(symbol, Provider.YFinance, Period.DAILY)
+    return fetch(symbol, Provider.Binance, Period.MINUTELY)
 
 
 def calculate_fib_levels(quotes, start_idx, end_idx):
@@ -27,21 +27,30 @@ def calculate_fib_levels(quotes, start_idx, end_idx):
     }
 
 
-def get_rolling_fib_windows(market_data, lookback_days=90):
+def get_rolling_fib_windows(market_data, lookback_days=None, lookback_minutes=None):
     quotes = market_data.quotes
     if not quotes:
         return []
 
+    lookback_period = 10
+    lookback = timedelta(days=10)
+    if lookback_days:
+        lookback_period = lookback_days
+        lookback = timedelta(days=lookback_days)
+    elif lookback_minutes:
+        lookback_period = lookback_minutes
+        lookback = timedelta(minutes=lookback_minutes)
+
     fib_windows = []
     current_start = 0
     current_levels = calculate_fib_levels(
-        quotes, 0, min(lookback_days, len(quotes) - 1)
+        quotes, 0, min(lookback_period, len(quotes) - 1)
     )
     start_ts = quotes[0].timestamp
 
     for i in range(1, len(quotes)):
         current_ts = quotes[i].timestamp
-        if current_ts - start_ts >= timedelta(days=lookback_days):
+        if current_ts - start_ts >= lookback:
             if (
                 quotes[i].high > current_levels["0%"]
                 or quotes[i].low < current_levels["100%"]
@@ -52,7 +61,7 @@ def get_rolling_fib_windows(market_data, lookback_days=90):
                 current_levels = calculate_fib_levels(
                     quotes,
                     current_start,
-                    min(current_start + lookback_days, len(quotes) - 1),
+                    min(current_start + lookback_period, len(quotes) - 1),
                 )
 
     fib_windows.append((start_ts, quotes[-1].timestamp, current_levels))
@@ -96,8 +105,8 @@ def generate_signals(market_data, fib_windows):
             last_action = ActionType.SHORT
 
 
-market_data = fetch_market_data("BTC-USD")
-fib_windows = get_rolling_fib_windows(market_data, lookback_days=30)
+market_data = fetch_market_data("BTCUSDT")
+fib_windows = get_rolling_fib_windows(market_data, lookback_minutes=60)
 plot_fib_levels(fib_windows)
 generate_signals(market_data, fib_windows)
 draw()
