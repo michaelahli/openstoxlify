@@ -24,15 +24,40 @@ COLOR_PALETTE = [
 ASSIGNED_COLORS = {}
 
 
-def get_color(label):
+def _get_color(label):
     """Assign a consistent random color for each label."""
     if label not in ASSIGNED_COLORS:
         ASSIGNED_COLORS[label] = random.choice(COLOR_PALETTE)
     return ASSIGNED_COLORS[label]
 
 
+def _has_plotting_data() -> bool:
+    """Check if there's any data available to plot.
+
+    Returns:
+        bool: True if there's data to plot, False otherwise
+    """
+    for plot_type in PlotType:
+        if PLOT_DATA.get(plot_type):
+            return True
+
+    if hasattr(MARKET_DATA, "quotes") and MARKET_DATA.quotes:
+        return True
+
+    if STRATEGY_DATA.get("strategy"):
+        for strategy in STRATEGY_DATA["strategy"]:
+            if strategy.get("data"):
+                return True
+
+    return False
+
+
 def draw():
     """Draw all charts from the PLOT_DATA and MARKET_DATA."""
+    if not _has_plotting_data():
+        print("No data available to plot")
+        return
+
     fig, ax = plt.subplots(figsize=(12, 6))
 
     def convert_timestamp(timestamp):
@@ -59,7 +84,7 @@ def draw():
             timestamps,
             values,
             label=label,
-            color=get_color(plot["label"]),
+            color=_get_color(plot["label"]),
             width=bar_width,
             alpha=0.6,
         )
@@ -71,7 +96,7 @@ def draw():
             timestamps,
             values,
             label=plot["label"],
-            color=get_color(plot["label"]),
+            color=_get_color(plot["label"]),
             lw=2,
         )
 
@@ -82,7 +107,7 @@ def draw():
             timestamps,
             values,
             label=plot["label"],
-            color=get_color(plot["label"]),
+            color=_get_color(plot["label"]),
             alpha=0.3,
         )
 
@@ -146,7 +171,8 @@ def draw():
     ax.set_xlabel("Date")
     ax.set_ylabel("Price")
     ax.set_title("Market Data Visualizations")
-    ax.legend()
+    if ax.get_legend_handles_labels()[0]:
+        ax.legend()
 
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
