@@ -1,5 +1,6 @@
 # OpenStoxlify 📈
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/michaelahli/openstoxlify)
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -35,15 +36,16 @@ draw()
 
 ---
 
-
 ## 📦 Installation
 
 ### Basic Installation
+
 ```bash
 pip install openstoxlify
 ```
 
 ### For Development
+
 ```bash
 git clone https://github.com/michaelahli/openstoxlify.git
 cd openstoxlify
@@ -53,6 +55,7 @@ python examples/moving_average.py
 ```
 
 ### Requirements
+
 | Package    | Minimum Version | Notes                           |
 | ---------- | --------------- | ------------------------------- |
 | Python     | 3.8+            |                                 |
@@ -61,17 +64,21 @@ python examples/moving_average.py
 | pandas     | 1.3+            | Recommended for data analysis   |
 
 ### Troubleshooting
+
 1. **Missing Dependencies**:
+
    ```bash
    pip install --upgrade requests matplotlib pandas
    ```
 
 2. **Permission Issues** (Linux/Mac):
+
    ```bash
    pip install --user openstoxlify
    ```
 
 3. **Conda Users**:
+
    ```bash
    conda install -c conda-forge requests matplotlib
    pip install openstoxlify
@@ -82,6 +89,7 @@ python examples/moving_average.py
 ## 📊 Core Components
 
 ### Market Data Fetching
+
 ```python
 data = fetch(
     symbol="BTC-USD",
@@ -91,10 +99,12 @@ data = fetch(
 ```
 
 **Supported Providers**:
+
 - `YFinance` - Yahoo Finance market data
 - `Binance` - Crypto data from Binance
 
 **Available Timeframes**:
+
 | Period     | Interval |
 | ---------- | -------- |
 | MINUTELY   | 1m       |
@@ -108,6 +118,7 @@ data = fetch(
 ---
 
 ### Strategy Signals
+
 ```python
 act(
     action=ActionType.LONG,      # Trading decision
@@ -117,6 +128,7 @@ act(
 ```
 
 **Action Types**:
+
 | Type  | Description           | Visual Marker |
 | ----- | --------------------- | ------------- |
 | LONG  | Buy/Bullish position  | ▲ Blue        |
@@ -126,6 +138,7 @@ act(
 ---
 
 ### Visualization
+
 ```python
 plot(
     graph_type=PlotType.LINE,
@@ -136,6 +149,7 @@ plot(
 ```
 
 **Plot Types**:
+
 - `LINE`: Continuous trend lines
 - `HISTOGRAM`: Volume/indicator bars  
 - `AREA`: Filled regions (e.g., Bollinger Bands)
@@ -145,12 +159,14 @@ plot(
 ## 🎨 Visualization with `draw()`
 
 The `draw()` function generates professional financial charts combining:
+
 - Price data (OHLC candles)
 - Technical indicators
 - Trading signals
 - Custom annotations
 
 ### Basic Usage
+
 ```python
 from openstoxlify import draw
 
@@ -159,6 +175,7 @@ draw()  # Displays interactive matplotlib chart
 ```
 
 ### Chart Features
+
 | Element          | Description                         | Example Visual    |
 | ---------------- | ----------------------------------- | ----------------- |
 | **Candlesticks** | Green/red based on price direction  | 🟩🟥                |
@@ -166,6 +183,7 @@ draw()  # Displays interactive matplotlib chart
 | **Indicators**   | Lines, histograms, and filled areas | ─────             |
 
 ### Customization Options
+
 ```python
 # Configure before calling draw()
 plt.rcParams.update({
@@ -178,15 +196,19 @@ draw()  # Now with custom styling
 ```
 
 ### Example Output
+
 ![Sample Chart](public/images/ma_chart.png)
 *(Actual chart would show:)*
+
 - Price candles with volume
 - SMA lines in different colors
 - Triangle markers for entry/exit points
 - Strategy annotations with position sizes
 
 ### Advanced Features
+
 1. **Multi-panel Layouts**:
+
 ```python
 # Create subplots
 fig, (ax1, ax2) = plt.subplots(2, 1, height_ratios=[3,1])
@@ -200,12 +222,14 @@ plt.show()
 ```
 
 2. **Save to File**:
+
 ```python
 draw()
 plt.savefig('strategy_backtest.png', dpi=300)
 ```
 
 ### Key Parameters
+
 | Parameter | Type      | Default   | Description                               |
 | --------- | --------- | --------- | ----------------------------------------- |
 | `figsize` | (int,int) | (12,6)    | Chart dimensions (width,height)           |
@@ -217,6 +241,7 @@ plt.savefig('strategy_backtest.png', dpi=300)
 ## 📝 API Reference
 
 ### Data Structure
+
 ```python
 @dataclass
 class MarketData:
@@ -227,6 +252,7 @@ class MarketData:
 ```
 
 **Quote Object**:
+
 ```python
 @dataclass
 class Quote:
@@ -243,6 +269,7 @@ class Quote:
 ## 📚 Example Strategies
 
 ### Moving Average Crossover
+
 ```python
 def ma_crossover(symbol: str, fast: int, slow: int):
     data = fetch(symbol, Period.DAILY)
