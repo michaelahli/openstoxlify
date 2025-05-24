@@ -1,112 +1,103 @@
-from datetime import datetime, time, timedelta
-from openstoxlify.draw import draw
-from openstoxlify.models import MarketData, Period, PlotType, ActionType, Provider
-from openstoxlify.plotter import plot
+from openstoxlify.models import Period, Provider, PlotType, ActionType
 from openstoxlify.fetch import fetch
+from openstoxlify.plotter import plot
 from openstoxlify.strategy import act
+from openstoxlify.draw import draw
+from datetime import datetime, timedelta, timezone
+
+data = fetch("PEPEUSDT", Provider.Binance, Period.QUINTLY)
+quotes = data.quotes
+closes = [q.close for q in quotes]
 
 
-def fetch_market_data(symbol: str) -> MarketData:
-    return fetch(symbol, Provider.Binance, Period.MINUTELY)
-
-
-def calculate_fib_levels(quotes, start_idx, end_idx):
-    window_quotes = quotes[start_idx : end_idx + 1]
-    high = max(q.high for q in window_quotes)
-    low = min(q.low for q in window_quotes)
-    diff = high - low
-
+def calculate_fibonacci_levels(data):
+    max_price = max(data)
+    min_price = min(data)
+    diff = max_price - min_price
     return {
-        "100%": high,
-        "78.6": high - diff * 0.236,
-        "61.8%": high - diff * 0.382,
-        "50%": high - diff * 0.5,
-        "38.2%": high - diff * 0.618,
-        "23.6%": high - diff * 0.786,
-        "0%": low,
+        "0.0": max_price,
+        "0.236": max_price - 0.236 * diff,
+        "0.382": max_price - 0.382 * diff,
+        "0.5": max_price - 0.5 * diff,
+        "0.618": max_price - 0.618 * diff,
+        "0.786": max_price - 0.786 * diff,
+        "1.0": min_price,
     }
 
 
-def get_rolling_fib_windows(market_data, lookback_days=None, lookback_minutes=None):
-    quotes = market_data.quotes
-    if not quotes:
-        return []
+def get_start_index_from_now(hours=0, days=0):
+    now = datetime.now(timezone.utc)
+    target_time = now - timedelta(hours=hours, days=days)
+    target_time = target_time.replace(minute=0, second=0, microsecond=0)
 
-    lookback_period = 10
-    lookback = timedelta(days=10)
-    if lookback_days:
-        lookback_period = lookback_days
-        lookback = timedelta(days=lookback_days)
-    elif lookback_minutes:
-        lookback_period = lookback_minutes
-        lookback = timedelta(minutes=lookback_minutes)
+    for idx, q in enumerate(quotes):
+        q_time = q.timestamp
+        if isinstance(q_time, float):
+            q_time = datetime.fromtimestamp(q_time, tz=timezone.utc)
+        elif q_time.tzinfo is None:
+            q_time = q_time.replace(tzinfo=timezone.utc)
 
-    fib_windows = []
-    current_start = 0
-    current_levels = calculate_fib_levels(
-        quotes, 0, min(lookback_period, len(quotes) - 1)
-    )
-    start_ts = quotes[0].timestamp
-
-    for i in range(1, len(quotes)):
-        current_ts = quotes[i].timestamp
-        if current_ts - start_ts >= lookback:
-            if (
-                quotes[i].high > current_levels["0%"]
-                or quotes[i].low < current_levels["100%"]
-            ):
-                fib_windows.append((start_ts, current_ts, current_levels))
-                current_start = i
-                start_ts = current_ts
-                current_levels = calculate_fib_levels(
-                    quotes,
-                    current_start,
-                    min(current_start + lookback_period, len(quotes) - 1),
-                )
-
-    fib_windows.append((start_ts, quotes[-1].timestamp, current_levels))
-    return fib_windows
+        if q_time >= target_time:
+            return idx
+    return 0
 
 
-def plot_fib_levels(fib_windows):
-    for start_ts, end_ts, levels in fib_windows:
-        for name in levels:
-            plot(PlotType.LINE, f"Fib {name}", start_ts, levels[name])
-            plot(PlotType.LINE, f"Fib {name}", end_ts, levels[name])
+lookback = 30
+current_position = None
+amt = 500000
+start_hour = 48
 
+start_index = get_start_index_from_now(hours=start_hour)
 
-def generate_signals(market_data, fib_windows):
-    if not fib_windows or not market_data.quotes:
-        return
+fib_ranges = []
+for i in range(0, len(closes), lookback):
+    start = i
+    end = min(i + lookback, len(closes))
+    segment_closes = closes[start:end]
+    if len(segment_closes) < 2:
+        continue
+    levels = calculate_fibonacci_levels(segment_closes)
+    fib_ranges.append((start, end, levels))
 
-    last_action = ActionType.HOLD
+for i in range(start_index, len(closes)):
+    current_range = None
+    current_range_idx = 0
+    for idx, (start, end, levels) in enumerate(fib_ranges):
+        if start <= i < end:
+            current_range = (start, end, levels)
+            current_range_idx = idx
+            break
 
-    for quote in market_data.quotes:
-        current_levels = None
-        for start_ts, end_ts, levels in fib_windows:
-            if start_ts <= quote.timestamp <= end_ts:
-                current_levels = levels
-                break
+    if current_range is None or current_range_idx == 0:
+        continue
 
-        if not current_levels:
-            continue
+    _, _, current_levels = current_range
+    _, _, prev_levels = fib_ranges[current_range_idx - 1]
 
-        current_price = quote.close
-        in_buy_zone = current_levels["0%"] <= current_price <= current_levels["38.2%"]
-        in_sell_zone = (
-            current_levels["61.8%"] <= current_price <= current_levels["100%"]
-        )
+    current_time = quotes[i].timestamp
+    current_price = closes[i]
 
-        if in_buy_zone and last_action != ActionType.LONG:
-            act(ActionType.LONG, quote.timestamp, 1)
-            last_action = ActionType.LONG
-        elif in_sell_zone and last_action == ActionType.LONG:
-            act(ActionType.SHORT, quote.timestamp, 1)
-            last_action = ActionType.SHORT
+    plot(PlotType.LINE, "Price", current_time, current_price)
+    plot(PlotType.LINE, "Fib 0.236", current_time, current_levels["0.236"])
+    plot(PlotType.LINE, "Fib 0.382", current_time, current_levels["0.382"])
+    plot(PlotType.LINE, "Fib 0.5", current_time, current_levels["0.5"])
+    plot(PlotType.LINE, "Fib 0.618", current_time, current_levels["0.618"])
+    plot(PlotType.LINE, "Fib 0.786", current_time, current_levels["0.786"])
 
+    # Trade decision based on previous period levels
+    if (
+        current_position != ActionType.LONG
+        and current_price < prev_levels["0.786"]
+        and current_price > prev_levels["1.0"]
+    ):
+        act(ActionType.LONG, current_time, amt)
+        current_position = ActionType.LONG
+    elif (
+        current_position != ActionType.SHORT
+        and current_price > prev_levels["0.236"]
+        and current_price < prev_levels["0.0"]
+    ):
+        act(ActionType.SHORT, current_time, amt * 0.999)
+        current_position = ActionType.SHORT
 
-market_data = fetch_market_data("BTCUSDT")
-fib_windows = get_rolling_fib_windows(market_data, lookback_minutes=60)
-plot_fib_levels(fib_windows)
-generate_signals(market_data, fib_windows)
 draw()
