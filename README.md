@@ -174,6 +174,26 @@ from openstoxlify import draw
 draw()  # Displays interactive matplotlib chart
 ```
 
+### Full Customization Example
+
+```python
+draw(
+    show_legend=True,             # Toggle legend visibility
+    figsize=(16, 9),              # Larger figure size
+    offset_multiplier=0.03,       # Adjust trade marker positions
+    rotation=45,                  # X-axis label rotation
+    title="Custom Strategy Backtest",
+    xlabel="Trading Days",
+    ylabel="Price (USD)",
+    candle_linewidth=0.8,         # Wick thickness
+    candle_body_width=3,          # Body thickness
+    marker_size=10,               # Trade signal markers
+    annotation_fontsize=8,        # Trade annotation text
+    histogram_alpha=0.7,          # Histogram transparency
+    area_alpha=0.4,               # Area plot transparency
+    line_width=2.5                # Trend line thickness
+)
+
 ### Chart Features
 
 | Element          | Description                         | Example Visual    |
@@ -230,11 +250,23 @@ plt.savefig('strategy_backtest.png', dpi=300)
 
 ### Key Parameters
 
-| Parameter | Type      | Default   | Description                               |
-| --------- | --------- | --------- | ----------------------------------------- |
-| `figsize` | (int,int) | (12,6)    | Chart dimensions (width,height)           |
-| `style`   | str       | 'default' | Matplotlib style ('dark_background', etc) |
-| `title`   | str       | None      | Custom chart title                        |
+| Parameter             | Type  | Default                      | Description                       |
+| --------------------- | ----- | ---------------------------- | --------------------------------- |
+| `show_legend`         | bool  | True                         | Show/hide chart legend            |
+| `figsize`             | tuple | (12,6)                       | Figure dimensions (width, height) |
+| `offset_multiplier`   | float | 0.05                         | Trade marker offset from price    |
+| `rotation`            | int   | 30                           | X-axis label rotation angle       |
+| `ha`                  | str   | 'right'                      | X-axis label horizontal alignment |
+| `title`               | str   | "Market Data Visualizations" | Chart title                       |
+| `xlabel`              | str   | "Date"                       | X-axis label                      |
+| `ylabel`              | str   | "Price"                      | Y-axis label                      |
+| `candle_linewidth`    | float | 1                            | Candlestick wick line width       |
+| `candle_body_width`   | float | 4                            | Candlestick body line width       |
+| `marker_size`         | int   | 8                            | Trade marker size                 |
+| `annotation_fontsize` | int   | 9                            | Trade annotation font size        |
+| `histogram_alpha`     | float | 0.6                          | Histogram bar transparency        |
+| `area_alpha`          | float | 0.3                          | Area plot transparency            |
+| `line_width`          | float | 2                            | Line plot width                   |
 
 ---
 

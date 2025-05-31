@@ -52,13 +52,47 @@ def _has_plotting_data() -> bool:
     return False
 
 
-def draw():
-    """Draw all charts from the PLOT_DATA and MARKET_DATA."""
+def draw(
+    show_legend: bool = True,
+    figsize: tuple = (12, 6),
+    offset_multiplier: float = 0.05,
+    rotation: int = 30,
+    ha: str = "right",
+    title: str = "Market Data Visualizations",
+    xlabel: str = "Date",
+    ylabel: str = "Price",
+    candle_linewidth: float = 1,
+    candle_body_width: float = 4,
+    marker_size: int = 8,
+    annotation_fontsize: int = 9,
+    histogram_alpha: float = 0.6,
+    area_alpha: float = 0.3,
+    line_width: float = 2,
+):
+    """Draw all charts from the PLOT_DATA and MARKET_DATA with customizable options.
+
+    Args:
+        show_legend (bool): Whether to show the legend. Default True.
+        figsize (tuple): Figure size as (width, height). Default (12, 6).
+        offset_multiplier (float): Multiplier for trade annotation offset. Default 0.05.
+        rotation (int): Rotation angle for x-axis labels. Default 30.
+        ha (str): Horizontal alignment for x-axis labels. Default 'right'.
+        title (str): Chart title. Default 'Market Data Visualizations'.
+        xlabel (str): X-axis label. Default 'Date'.
+        ylabel (str): Y-axis label. Default 'Price'.
+        candle_linewidth (float): Width of candle wick lines. Default 1.
+        candle_body_width (float): Width of candle body lines. Default 4.
+        marker_size (int): Size of trade markers. Default 8.
+        annotation_fontsize (int): Font size for trade annotations. Default 9.
+        histogram_alpha (float): Transparency for histogram bars. Default 0.6.
+        area_alpha (float): Transparency for area plots. Default 0.3.
+        line_width (float): Width of line plots. Default 2.
+    """
     if not _has_plotting_data():
         print("No data available to plot")
         return
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=figsize)
 
     def convert_timestamp(timestamp):
         if isinstance(timestamp, str):
@@ -86,7 +120,7 @@ def draw():
             label=label,
             color=_get_color(plot["label"]),
             width=bar_width,
-            alpha=0.6,
+            alpha=histogram_alpha,
         )
 
     for plot in PLOT_DATA.get(PlotType.LINE, []):
@@ -97,7 +131,7 @@ def draw():
             values,
             label=plot["label"],
             color=_get_color(plot["label"]),
-            lw=2,
+            lw=line_width,
         )
 
     for plot in PLOT_DATA.get(PlotType.AREA, []):
@@ -108,7 +142,7 @@ def draw():
             values,
             label=plot["label"],
             color=_get_color(plot["label"]),
-            alpha=0.3,
+            alpha=area_alpha,
         )
 
     candle_lut = {}
@@ -119,8 +153,8 @@ def draw():
         price = item.close
 
         color = "green" if item.close > item.open else "red"
-        ax.vlines(ts_num, item.low, item.high, color=color, lw=1)
-        ax.vlines(ts_num, item.open, item.close, color=color, lw=4)
+        ax.vlines(ts_num, item.low, item.high, color=color, lw=candle_linewidth)
+        ax.vlines(ts_num, item.open, item.close, color=color, lw=candle_body_width)
 
         candle_lut[ts_str] = (ts_num, price)
 
@@ -139,43 +173,43 @@ def draw():
                 continue
 
             ts_num, price = candle_lut[ts_key]
-            offset = price * 0.05
+            offset = price * offset_multiplier
             direction = trade.get("action") or trade.get("value")
             amount = trade.get("amount", 0.0)
 
             if direction == ActionType.LONG.value:
                 y = price - offset
-                ax.plot(ts_num, y, marker="^", color="blue", markersize=8)
+                ax.plot(ts_num, y, marker="^", color="blue", markersize=marker_size)
                 ax.annotate(
                     f"LONG {amount}",
                     xy=(ts_num, y),
                     xytext=(0, -15),
                     textcoords="offset points",
                     ha="center",
-                    fontsize=9,
+                    fontsize=annotation_fontsize,
                     color="blue",
                 )
             elif direction == ActionType.SHORT.value:
                 y = price + offset
-                ax.plot(ts_num, y, marker="v", color="purple", markersize=8)
+                ax.plot(ts_num, y, marker="v", color="purple", markersize=marker_size)
                 ax.annotate(
                     f"SHORT {amount}",
                     xy=(ts_num, y),
                     xytext=(0, 10),
                     textcoords="offset points",
                     ha="center",
-                    fontsize=9,
+                    fontsize=annotation_fontsize,
                     color="purple",
                 )
 
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Price")
-    ax.set_title("Market Data Visualizations")
-    if ax.get_legend_handles_labels()[0]:
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    if show_legend and ax.get_legend_handles_labels()[0]:
         ax.legend()
 
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    plt.xticks(rotation=30, ha="right")
+    plt.xticks(rotation=rotation, ha=ha)
     plt.tight_layout()
     plt.show()
