@@ -1,235 +1,209 @@
-**OpenStoxlify Library Documentation Template for AI Systems**
+# OpenStoxlify Library Documentation
 
-# LIBRARY PURPOSE
+## LIBRARY PURPOSE
 
 Python library for algorithmic trading with:
 
 - Multi-source market data fetching
-- Technical indicator calculation
+- Technical indicator calculation  
 - Strategy signal generation
 - Professional financial visualization
 
-# CORE COMPONENTS
+## CORE COMPONENTS
 
-## 1. Data Module (`fetch`)
+### Data Module (`fetch`)
 
 ```python
-from openstoxlify import fetch
+from openstoxlify.fetch import fetch
 from openstoxlify.models import Provider, Period
 
-# Usage pattern:
-data = fetch(
-    symbol: str,               # Trading pair (e.g., "BTCUSDT")
-    provider: Provider,        # Provider.YFinance or Provider.Binance
-    period: Period            # Timeframe (e.g., Period.DAILY)
-)
+data = fetch(symbol, provider, period)
 ```
 
-## 2. Plotting Module (`plot`)
+### Plotting Module (`plot`)
 
 ```python
-from openstoxlify import plot
+from openstoxlify.plotter import plot
 from openstoxlify.models import PlotType
 
-# Usage patterns:
-plot(
-    PlotType.LINE,            # LINE/HISTOGRAM/AREA
-    label: str,               # Display name
-    timestamp: datetime,      # Point in time
-    value: float              # Data value
-)
+plot(PlotType.LINE, label, timestamp, value)
 ```
 
-## 3. Strategy Module (`act`)
+### Strategy Module (`act`)
 
 ```python
-from openstoxlify import act
+from openstoxlify.strategy import act
 from openstoxlify.models import ActionType
 
-# Usage pattern:
-act(
-    ActionType.LONG/SHORT,    # Trade direction
-    timestamp: datetime,      # Entry time
-    amount: float             # Position size
-)
+act(ActionType.LONG, timestamp, amount)
 ```
 
-## 4. Visualization (`draw`)
+### Visualization (`draw`)
 
 ```python
-from openstoxlify import draw
+from openstoxlify.draw import draw
 
-# Renders all plotted elements
-draw()  
-```
-
-# STRATEGY CREATION TEMPLATE
-
-```python
-# 1. Configure strategy parameters
-SYMBOL = "BTCUSDT"
-TIMEFRAME = Period.HOURLY
-INDICATOR_PARAMS = {...}
-
-# 2. Fetch market data
-data = fetch(SYMBOL, Provider.Binance, TIMEFRAME)
-
-# 3. Calculate indicators
-def calculate_indicator(values):
-    # Implement indicator logic
-    return indicator_values
-
-# 4. Generate signals
-for i, quote in enumerate(data.quotes):
-    # Plot price data
-    plot(PlotType.LINE, "Price", quote.timestamp, quote.close)
-    
-    # Generate signals based on conditions
-    if buy_condition:
-        act(ActionType.LONG, quote.timestamp, 1)
-    elif sell_condition:
-        act(ActionType.SHORT, quote.timestamp, 1)
-
-# 5. Visualize results
 draw()
 ```
 
-# INDICATOR IMPLEMENTATION GUIDE
+## DATA MODELS
 
-Common patterns for indicators:
+### MarketData
 
-1. **Moving Averages**:
+```python
+class MarketData:
+    quotes: List[Quote]
+```
 
-   ```python
-   def sma(data, window):
-       return [sum(data[i-window:i])/window 
-               for i in range(window, len(data)+1)]
-   ```
+### Quote  
 
-2. **Oscillators (RSI, MACD)**:
+```python
+class Quote:
+    timestamp: datetime
+    open: float
+    high: float  
+    low: float
+    close: float
+```
 
-   ```python
-   def rsi(prices, window=14):
-       deltas = np.diff(prices)
-       gains = deltas.clip(min=0)
-       losses = -deltas.clip(max=0)
-       return 100 - (100 / (1 + (gains.mean()/losses.mean())))
-   ```
+### Enums
 
-# SIGNAL GENERATION PATTERNS
+```python
+class Provider:
+    YFinance = "yfinance"
+    Binance = "binance"
 
-1. **Crossover Signals**:
+class Period:
+    MINUTELY = "1m"
+    QUINTLY = "5m" 
+    HOURLY = "1h"
+    DAILY = "1d"
 
-   ```python
-   if fast_ma[i-1] < slow_ma[i-1] and fast_ma[i] > slow_ma[i]:
-       act(ActionType.LONG, ...)
-   ```
+class PlotType:
+    LINE = "line"
+    HISTOGRAM = "histogram"
+    AREA = "area"
 
-2. **Threshold Breakouts**:
+class ActionType:
+    LONG = "long"
+    SHORT = "short" 
+    HOLD = "hold"
+```
 
-   ```python
-   if rsi_value < 30:
-       act(ActionType.LONG, ...)
-   elif rsi_value > 70:
-       act(ActionType.SHORT, ...)
-   ```
+## USAGE PATTERNS
 
-# VISUALIZATION OPTIONS
+### Basic Data Fetching
 
-1. **Multi-panel Layouts**:
+```python
+market_data = fetch("BTC-USD", Provider.YFinance, Period.DAILY)
+```
 
-   ```python
-   fig, (ax1, ax2) = plt.subplots(2, 1)
-   draw(ax=ax1)  # Price + indicators
-   plot_volume(ax=ax2)  # Custom volume plot
-   ```
+### Price Plotting
 
-2. **Style Customization**:
+```python
+for quote in market_data.quotes:
+    plot(PlotType.LINE, "Price", quote.timestamp, quote.close)
+```
 
-   ```python
-   plt.style.use('dark_background')
-   plt.rcParams['lines.linewidth'] = 1.5
-   ```
+### Signal Generation
 
-# EXAMPLE STRATEGIES
+```python
+act(ActionType.LONG, timestamp, 1.0)
+```
 
-1. **Moving Average Crossover**
-2. **Bollinger Band Mean Reversion**
-3. **MACD Divergence**
-4. **Support/Resistance Breakout**
+### Complete Strategy Template
 
-# ERROR HANDLING
+```python
+from openstoxlify.models import MarketData, Period, PlotType, ActionType, Provider
+from openstoxlify.plotter import plot
+from openstoxlify.fetch import fetch
+from openstoxlify.draw import draw
+from openstoxlify.strategy import act
 
-Common issues:
+market_data = fetch("SYMBOL", Provider.Binance, Period.DAILY)
 
-- Check `len(data) > window` before indicator calc
-- Verify timestamp alignment when comparing series
-- Handle division by zero in indicators
+for quote in market_data.quotes:
+    plot(PlotType.LINE, "Price", quote.timestamp, quote.close)
 
-# BEST PRACTICES
+act(ActionType.LONG, market_data.quotes[0].timestamp, 1)
+draw()
+```
 
-1. Test strategies with:
+## INDICATOR IMPLEMENTATION
 
-   ```python
-   data = fetch(..., Period.DAILY)  # Start with daily
-   ```
+### Moving Average
 
-2. Visualize all components:
+```python
+def calculate_sma(market_data, window):
+    prices = [quote.close for quote in market_data.quotes]
+    return [
+        (market_data.quotes[i + window - 1].timestamp, sum(prices[i:i + window]) / window)
+        for i in range(len(prices) - window + 1)
+    ]
+```
 
-   ```python
-   plot(PlotType.LINE, "Indicator", ...)
-   ```
+### Stochastic Oscillator
 
-3. Document signal logic with:
+```python
+def calculate_stochastic(market_data, k_period=14, d_period=3):
+    quotes = market_data.quotes
+    highs = [q.high for q in quotes]
+    lows = [q.low for q in quotes]
+    closes = [q.close for q in quotes]
+    
+    stoch_k = []
+    for i in range(k_period - 1, len(closes)):
+        current_high = max(highs[i - k_period + 1:i + 1])
+        current_low = min(lows[i - k_period + 1:i + 1])
+        k = 100 * ((closes[i] - current_low) / (current_high - current_low)) if current_high != current_low else 50
+        stoch_k.append((quotes[i].timestamp, k))
+    
+    return stoch_k, stoch_d
+```
 
-   ```python
-   act(..., notes="EMA9 > EMA21")
-   ```
+## SIGNAL GENERATION PATTERNS
 
-# Rules for LLM  
+### Crossover Strategy
 
-- **No comments**  
-- **No descriptions**  
-- **No print statements**  
-- **No new arguments**  
-- **Only use variables/functions defined above**  
-- **Strictly follow the template structure**  
+```python
+sma_fast = calculate_sma(market_data, 9)
+sma_slow = calculate_sma(market_data, 21)
 
-**Example Output Format:**  
+fast_dict = dict(sma_fast)
+slow_dict = dict(sma_slow)
 
-```python  
-from openstoxlify.models import Period, Provider, PlotType, ActionType  
-from openstoxlify.fetch import fetch  
-from openstoxlify.plotter import plot  
-from openstoxlify.strategy import act  
-from openstoxlify.draw import draw  
+for timestamp, fast_value in sma_fast:
+    slow_value = slow_dict.get(timestamp)
+    if fast_value > slow_value:
+        act(ActionType.LONG, timestamp, 1)
+    elif fast_value < slow_value:
+        act(ActionType.SHORT, timestamp, 1)
+```
 
-data = fetch("BTCUSDT", Provider.Binance, Period.HOURLY)  
-quotes = data.quotes  
-closes = [q.close for q in quotes]  
+### Oscillator Strategy
 
-def calculate_ema(data, window):  
-    return [...]  
+```python
+stoch_k, stoch_d = calculate_stochastic(market_data)
+k_dict = dict(stoch_k)
+d_dict = dict(stoch_d)
 
-ema12 = calculate_ema(closes, 12)  
-ema26 = calculate_ema(closes, 26)  
+for quote in market_data.quotes:
+    if quote.timestamp in k_dict and quote.timestamp in d_dict:
+        k = k_dict[quote.timestamp]
+        d = d_dict[quote.timestamp]
+        if k < 20 and d < 20:
+            act(ActionType.LONG, quote.timestamp, 1)
+        elif k > 80 and d > 80:
+            act(ActionType.SHORT, quote.timestamp, 1)
+```
 
-for i in range(26, len(closes)):  
-    current_time = quotes[i].timestamp  
-    current_price = closes[i]  
+## RULES FOR AI SYSTEMS
 
-    plot(PlotType.LINE, "Price", current_time, current_price)  
-    plot(PlotType.LINE, "EMA12", current_time, ema12[i-12])  
-    plot(PlotType.LINE, "EMA26", current_time, ema26[i-26])  
-
-    if ema12[i-12] > ema26[i-26] and ema12[i-13] <= ema26[i-27]:  
-        act(ActionType.LONG, current_time, 1)  
-    elif ema12[i-12] < ema26[i-26] and ema12[i-13] >= ema26[i-27]:  
-        act(ActionType.SHORT, current_time, 1)  
-
-draw()  
-```  
-
-**Strict Compliance Required.**  
-**No Deviations.**  
-**No Explanations.**
+- Use only functions and models defined in this documentation
+- No additional imports beyond openstoxlify modules
+- No print statements or comments in generated code
+- Follow the exact patterns shown in examples
+- All plotting must use plot() function
+- All actions must use act() function
+- Always call draw() at the end
+- Maintain timestamp alignment across series
