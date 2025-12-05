@@ -1,7 +1,9 @@
 import random
+import json
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
+from typing import List
 from datetime import datetime
 from .models import PlotType, ActionType
 from .plotter import PLOT_DATA
@@ -52,6 +54,43 @@ def _has_plotting_data() -> bool:
     return False
 
 
+def _unique_screens() -> List[int]:
+    group = []
+    for plot_type in [PlotType.HISTOGRAM, PlotType.LINE, PlotType.AREA]:
+        data = PLOT_DATA.get(plot_type)
+        if isinstance(data, str):
+            try:
+                group.append(json.loads(data))
+            except json.JSONDecodeError:
+                group.append([])
+        elif isinstance(data, list):
+            group.append(data)
+        else:
+            group.append([])
+
+    merged = []
+    for array in group:
+        merged.extend(array)
+
+    screens = set()
+    for item in merged:
+        if isinstance(item, dict) and "screen_index" in item:
+            screens.add(item["screen_index"])
+
+    result = sorted(list(screens))
+
+    if 0 not in result:
+        result = [0] + result
+
+    return result
+
+
+def convert_timestamp(timestamp):
+    if isinstance(timestamp, str):
+        return float(mdates.date2num(datetime.fromisoformat(timestamp)))
+    return float(mdates.date2num(timestamp))
+
+
 def draw(
     show_legend: bool = True,
     figsize: tuple = (12, 6),
@@ -92,15 +131,31 @@ def draw(
         print("No data available to plot")
         return
 
-    fig, ax = plt.subplots(figsize=figsize)
+    screens = _unique_screens()
+    unique_screens_count = len(screens)
 
-    def convert_timestamp(timestamp):
-        if isinstance(timestamp, str):
-            return mdates.date2num(datetime.fromisoformat(timestamp))
-        return mdates.date2num(timestamp)
+    if unique_screens_count == 0:
+        return
+
+    if unique_screens_count == 1:
+        fig, ax = plt.subplots(figsize=figsize)
+        axes = {screens[0]: ax}
+    else:
+        fig, axes_array = plt.subplots(
+            unique_screens_count, 1, figsize=figsize, sharex=True, squeeze=False
+        )
+        axes_array = axes_array.flatten()
+        axes = {screen_idx: axes_array[i] for i, screen_idx in enumerate(screens)}
 
     plotted_histograms = set()
     for plot in PLOT_DATA.get(PlotType.HISTOGRAM, []):
+        screen_idx = plot["screen_index"]
+
+        if screen_idx not in axes:
+            continue
+
+        ax = axes[screen_idx]
+
         timestamps = [convert_timestamp(item["timestamp"]) for item in plot["data"]]
         values = [item["value"] for item in plot["data"]]
 
@@ -124,6 +179,10 @@ def draw(
         )
 
     for plot in PLOT_DATA.get(PlotType.LINE, []):
+        screen_idx = plot["screen_index"]
+        if screen_idx not in axes:
+            continue
+        ax = axes[screen_idx]
         timestamps = [convert_timestamp(item["timestamp"]) for item in plot["data"]]
         values = [item["value"] for item in plot["data"]]
         ax.plot(
@@ -135,6 +194,10 @@ def draw(
         )
 
     for plot in PLOT_DATA.get(PlotType.AREA, []):
+        screen_idx = plot["screen_index"]
+        if screen_idx not in axes:
+            continue
+        ax = axes[screen_idx]
         timestamps = [convert_timestamp(item["timestamp"]) for item in plot["data"]]
         values = [item["value"] for item in plot["data"]]
         ax.fill_between(
@@ -145,71 +208,89 @@ def draw(
             alpha=area_alpha,
         )
 
-    candle_lut = {}
-    for item in MARKET_DATA.quotes:
-        timestamp = item.timestamp
-        ts_str = timestamp if isinstance(timestamp, str) else timestamp.isoformat()
-        ts_num = convert_timestamp(timestamp)
-        price = item.close
+    if 0 in axes:
+        ax_main = axes[0]
 
-        color = "green" if item.close > item.open else "red"
-        ax.vlines(ts_num, item.low, item.high, color=color, lw=candle_linewidth)
-        ax.vlines(ts_num, item.open, item.close, color=color, lw=candle_body_width)
+        candle_lut = {}
+        for item in MARKET_DATA.quotes:
+            timestamp = item.timestamp
+            ts_str = timestamp if isinstance(timestamp, str) else timestamp.isoformat()
+            ts_num = convert_timestamp(timestamp)
+            price = item.close
 
-        candle_lut[ts_str] = (ts_num, price)
-
-    for strategy in STRATEGY_DATA.get("strategy", []):
-        for trade in strategy.get("data", []):
-            if "timestamp" not in trade:
-                continue
-
-            ts_key = (
-                trade["timestamp"]
-                if isinstance(trade["timestamp"], str)
-                else trade["timestamp"].isoformat()
+            color = "green" if item.close > item.open else "red"
+            ax_main.vlines(
+                ts_num, item.low, item.high, color=color, lw=candle_linewidth
+            )
+            ax_main.vlines(
+                ts_num, item.open, item.close, color=color, lw=candle_body_width
             )
 
-            if ts_key not in candle_lut:
-                continue
+            candle_lut[ts_str] = (ts_num, price)
 
-            ts_num, price = candle_lut[ts_key]
-            offset = price * offset_multiplier
-            direction = trade.get("action") or trade.get("value")
-            amount = trade.get("amount", 0.0)
+        for strategy in STRATEGY_DATA.get("strategy", []):
+            for trade in strategy.get("data", []):
+                if "timestamp" not in trade:
+                    continue
 
-            if direction == ActionType.LONG.value:
-                y = price - offset
-                ax.plot(ts_num, y, marker="^", color="blue", markersize=marker_size)
-                ax.annotate(
-                    f"LONG {amount}",
-                    xy=(ts_num, y),
-                    xytext=(0, -15),
-                    textcoords="offset points",
-                    ha="center",
-                    fontsize=annotation_fontsize,
-                    color="blue",
-                )
-            elif direction == ActionType.SHORT.value:
-                y = price + offset
-                ax.plot(ts_num, y, marker="v", color="purple", markersize=marker_size)
-                ax.annotate(
-                    f"SHORT {amount}",
-                    xy=(ts_num, y),
-                    xytext=(0, 10),
-                    textcoords="offset points",
-                    ha="center",
-                    fontsize=annotation_fontsize,
-                    color="purple",
+                ts_key = (
+                    trade["timestamp"]
+                    if isinstance(trade["timestamp"], str)
+                    else trade["timestamp"].isoformat()
                 )
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    if show_legend and ax.get_legend_handles_labels()[0]:
-        ax.legend()
+                if ts_key not in candle_lut:
+                    continue
 
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-    plt.xticks(rotation=rotation, ha=ha)
+                ts_num, price = candle_lut[ts_key]
+                offset = price * offset_multiplier
+                direction = trade.get("action") or trade.get("value")
+                amount = trade.get("amount", 0.0)
+
+                if direction == ActionType.LONG.value:
+                    y = price - offset
+                    ax_main.plot(
+                        ts_num, y, marker="^", color="blue", markersize=marker_size
+                    )
+                    ax_main.annotate(
+                        f"LONG {amount}",
+                        xy=(ts_num, y),
+                        xytext=(0, -15),
+                        textcoords="offset points",
+                        ha="center",
+                        fontsize=annotation_fontsize,
+                        color="blue",
+                    )
+                elif direction == ActionType.SHORT.value:
+                    y = price + offset
+                    ax_main.plot(
+                        ts_num, y, marker="v", color="purple", markersize=marker_size
+                    )
+                    ax_main.annotate(
+                        f"SHORT {amount}",
+                        xy=(ts_num, y),
+                        xytext=(0, 10),
+                        textcoords="offset points",
+                        ha="center",
+                        fontsize=annotation_fontsize,
+                        color="purple",
+                    )
+
+        ax_main.set_xlabel(xlabel)
+        ax_main.set_ylabel(ylabel)
+        ax_main.set_title(title)
+        if show_legend and ax_main.get_legend_handles_labels()[0]:
+            ax_main.legend()
+
+        ax_main.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax_main.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        plt.setp(ax_main.xaxis.get_majorticklabels(), rotation=rotation, ha=ha)
+
+    for screen_idx, ax in axes.items():
+        if screen_idx != 0:
+            ax.set_ylabel(f"Screen {screen_idx}")
+            if show_legend and ax.get_legend_handles_labels()[0]:
+                ax.legend()
+
     plt.tight_layout()
     plt.show()

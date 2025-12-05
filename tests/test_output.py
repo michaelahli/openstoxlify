@@ -79,6 +79,7 @@ class TestStrategy(unittest.TestCase):
                     {
                         "label": "test_output",
                         "data": [{"timestamp": "2025-03-26T00:00:00", "value": 90000}],
+                        "screen_index": 0,
                     }
                 ],
                 "line": [],

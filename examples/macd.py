@@ -49,6 +49,7 @@ def plot_macd(macd, signal, histogram, price_min, price_max):
             "MACD",
             ts,
             offset + val * scale_factor / max(1, max(abs(v) for _, v in macd)),
+            1,
         )
 
     for ts, val in signal:
@@ -57,6 +58,7 @@ def plot_macd(macd, signal, histogram, price_min, price_max):
             "Signal",
             ts,
             offset + val * scale_factor / max(1, max(abs(v) for _, v in signal)),
+            1,
         )
 
     for ts, val in histogram:
@@ -65,6 +67,7 @@ def plot_macd(macd, signal, histogram, price_min, price_max):
             "Histogram",
             ts,
             offset + val * scale_factor / max(1, max(abs(v) for _, v in histogram)),
+            1,
         )
 
 

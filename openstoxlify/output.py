@@ -10,17 +10,29 @@ def output():
     result = {}
 
     result["histogram"] = [
-        {"label": plot["label"], "data": [item for item in plot["data"]]}
+        {
+            "label": plot["label"],
+            "data": [item for item in plot["data"]],
+            "screen_index": plot["screen_index"],
+        }
         for plot in PLOT_DATA.get(PlotType.HISTOGRAM, [])
     ]
 
     result["line"] = [
-        {"label": plot["label"], "data": [item for item in plot["data"]]}
+        {
+            "label": plot["label"],
+            "data": [item for item in plot["data"]],
+            "screen_index": plot["screen_index"],
+        }
         for plot in PLOT_DATA.get(PlotType.LINE, [])
     ]
 
     result["area"] = [
-        {"label": plot["label"], "data": [item for item in plot["data"]]}
+        {
+            "label": plot["label"],
+            "data": [item for item in plot["data"]],
+            "screen_index": plot["screen_index"],
+        }
         for plot in PLOT_DATA.get(PlotType.AREA, [])
     ]
 

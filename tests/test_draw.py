@@ -38,13 +38,25 @@ class TestDrawFunction(unittest.TestCase):
 
         # Plot types
         PLOT_DATA[PlotType.HISTOGRAM] = [
-            {"label": "histogram", "data": [{"timestamp": timestamp, "value": 100}]}
+            {
+                "label": "histogram",
+                "data": [{"timestamp": timestamp, "value": 100}],
+                "screen_index": 0,
+            }
         ]
         PLOT_DATA[PlotType.LINE] = [
-            {"label": "line", "data": [{"timestamp": timestamp, "value": 200}]}
+            {
+                "label": "line",
+                "data": [{"timestamp": timestamp, "value": 200}],
+                "screen_index": 0,
+            }
         ]
         PLOT_DATA[PlotType.AREA] = [
-            {"label": "area", "data": [{"timestamp": timestamp, "value": 300}]}
+            {
+                "label": "area",
+                "data": [{"timestamp": timestamp, "value": 300}],
+                "screen_index": 0,
+            }
         ]
 
         # Candlestick quote

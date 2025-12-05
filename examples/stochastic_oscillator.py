@@ -42,15 +42,15 @@ def plot_stochastic(stoch_k, stoch_d, price_min, price_max):
 
     for ts, val in stoch_k:
         scaled_val = offset + (val * scale_factor / 100)
-        plot(PlotType.LINE, "%K", ts, scaled_val)
+        plot(PlotType.LINE, "%K", ts, scaled_val, 1)
 
     for ts, val in stoch_d:
         scaled_val = offset + (val * scale_factor / 100)
-        plot(PlotType.LINE, "%D", ts, scaled_val)
+        plot(PlotType.LINE, "%D", ts, scaled_val, 1)
 
     for ts, _ in stoch_k:
-        plot(PlotType.LINE, "Overbought", ts, offset + (80 * scale_factor / 100))
-        plot(PlotType.LINE, "Oversold", ts, offset + (20 * scale_factor / 100))
+        plot(PlotType.LINE, "Overbought", ts, offset + (80 * scale_factor / 100), 1)
+        plot(PlotType.LINE, "Oversold", ts, offset + (20 * scale_factor / 100), 1)
 
 
 def generate_signals(market_data, stoch_k, stoch_d):
