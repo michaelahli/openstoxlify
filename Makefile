@@ -25,7 +25,3 @@ clean:
 
 setup: venv install
 	$(VENV_DIR)/bin/python setup.py install
-
-local: venv
-	$(VENV_DIR)/bin/pip install -e ./openstoxlify
-	$(VENV_DIR)/bin/python examples/getting_started.py

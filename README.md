@@ -144,7 +144,8 @@ plot(
     graph_type=PlotType.LINE,
     label="RSI(14)", 
     timestamp=quote.timestamp,
-    value=65.7
+    value=65.7,
+    screen_index=0
 )
 ```
 
