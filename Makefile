@@ -41,4 +41,4 @@ setup: venv install
 
 check-version:
 	@echo "Current version in pyproject.toml:"
-	@grep '^version = ' setup.cfg || echo "Version not found!"
+	@grep '^version = ' pyproject.toml || echo "Version not found!"
