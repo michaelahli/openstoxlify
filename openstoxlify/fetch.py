@@ -17,8 +17,17 @@ PERIOD_MAPPING = {
     Period.MONTHLY: {"interval": "1mo", "range": "max"},
 }
 
+DEFAULT_API_BASE = "https://api.stoxlify.com"
+DEFAULT_TIMEOUT = 10
 
-def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
+
+def fetch(
+    ticker: str,
+    provider: Provider,
+    period: Period,
+    api_base: str = DEFAULT_API_BASE,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> MarketData:
     global MARKET_DATA
 
     if period not in PERIOD_MAPPING:
@@ -29,7 +38,7 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
     interval = PERIOD_MAPPING[period]["interval"]
     time_range = PERIOD_MAPPING[period]["range"]
 
-    url = "https://api.app.stoxlify.com/v1/market/info"
+    url = f"{api_base}/v1/market/info"
     headers = {"Content-Type": "application/json"}
     payload = {
         "ticker": ticker,
@@ -40,7 +49,9 @@ def fetch(ticker: str, provider: Provider, period: Period) -> MarketData:
     }
 
     try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response = requests.post(
+            url, headers=headers, data=json.dumps(payload), timeout=timeout
+        )
     except requests.RequestException as req_err:
         raise RuntimeError(f"Request failed: {req_err}") from req_err
 
