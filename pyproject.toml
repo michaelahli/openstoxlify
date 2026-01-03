@@ -12,10 +12,10 @@ license = { text = "MIT" }
 authors = [{ name = "Stoxlify", email = "mail.stoxlify@gmail.com" }]
 keywords = ["trading", "finance", "algorithmic-trading", "technical-analysis"]
 
-dependencies = ["requests>=2.25.0", "matplotlib>=3.5.0", "grpcio"]
+dependencies = ["requests>=2.25.0", "matplotlib>=3.5.0", "grpcio", "protobuf"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0.0", "twine>=4.0.0", "build>=0.10.0", "protobuf"]
+dev = ["pytest>=7.0.0", "twine>=4.0.0", "build>=0.10.0"]
 
 [project.urls]
 Homepage = "https://github.com/michaelahli/openstoxlify"

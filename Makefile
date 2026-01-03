@@ -42,3 +42,6 @@ setup: venv install
 check-version:
 	@echo "Current version in pyproject.toml:"
 	@grep '^version = ' pyproject.toml || echo "Version not found!"
+
+generate-proto:
+	sh openstoxlify/proto/generate.sh
