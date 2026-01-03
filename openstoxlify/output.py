@@ -1,4 +1,6 @@
 import json
+
+from utcnow import utcnow
 from .plotter import PLOT_DATA
 from .strategy import STRATEGY_DATA
 from .models import PlotType
@@ -50,7 +52,7 @@ def output():
         "provider": MARKET_DATA.provider.value,
         "data": [
             {
-                "timestamp": quote.timestamp.isoformat(),
+                "timestamp": utcnow.get(quote.timestamp.isoformat()),
                 "open": quote.open,
                 "high": quote.high,
                 "low": quote.low,

@@ -1,4 +1,5 @@
 # pyright: reportAttributeAccessIssue=false
+from datetime import timezone
 from .proto import client
 from .proto.market import market_pb2, market_pb2_grpc
 
@@ -51,7 +52,7 @@ def fetch(
     quotes = []
 
     for q in response.Quote:
-        ts = q.Timestamp.ToDatetime()
+        ts = q.Timestamp.ToDatetime().replace(tzinfo=timezone.utc)
         price = q.ProductInfo.Price
 
         quotes.append(

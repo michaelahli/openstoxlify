@@ -1,6 +1,7 @@
 import unittest
 import json
 
+from utcnow import utcnow
 from datetime import datetime
 from unittest.mock import patch
 from openstoxlify import (
@@ -34,7 +35,7 @@ class TestStrategy(unittest.TestCase):
         self.assertEqual(len(PLOT_DATA[PlotType.HISTOGRAM][0]["data"]), 1)
         self.assertEqual(
             PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0]["timestamp"],
-            timestamp.isoformat(),
+            utcnow.get(timestamp.isoformat()),
         )
         self.assertEqual(PLOT_DATA[PlotType.HISTOGRAM][0]["data"][0]["value"], value)
 
@@ -48,7 +49,8 @@ class TestStrategy(unittest.TestCase):
             STRATEGY_DATA["strategy"][0]["data"][0]["action"], ActionType.LONG.value
         )
         self.assertEqual(
-            STRATEGY_DATA["strategy"][0]["data"][0]["timestamp"], timestamp.isoformat()
+            STRATEGY_DATA["strategy"][0]["data"][0]["timestamp"],
+            utcnow.get(timestamp.isoformat()),
         )
         self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][0]["amount"], 1.0)
 
@@ -59,7 +61,8 @@ class TestStrategy(unittest.TestCase):
             STRATEGY_DATA["strategy"][0]["data"][1]["action"], ActionType.HOLD.value
         )
         self.assertEqual(
-            STRATEGY_DATA["strategy"][0]["data"][1]["timestamp"], timestamp.isoformat()
+            STRATEGY_DATA["strategy"][0]["data"][1]["timestamp"],
+            utcnow.get(timestamp.isoformat()),
         )
         self.assertEqual(STRATEGY_DATA["strategy"][0]["data"][1]["amount"], 0.0)
 
@@ -78,7 +81,9 @@ class TestStrategy(unittest.TestCase):
                 "histogram": [
                     {
                         "label": "test_output",
-                        "data": [{"timestamp": "2025-03-26T00:00:00", "value": 90000}],
+                        "data": [
+                            {"timestamp": "2025-03-26T00:00:00.000000Z", "value": 90000}
+                        ],
                         "screen_index": 0,
                     }
                 ],
@@ -89,7 +94,7 @@ class TestStrategy(unittest.TestCase):
                         "label": "strategy",
                         "data": [
                             {
-                                "timestamp": "2025-03-26T00:00:00",
+                                "timestamp": "2025-03-26T00:00:00.000000Z",
                                 "action": "Long",
                                 "amount": 1.0,
                             }
