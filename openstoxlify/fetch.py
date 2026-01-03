@@ -1,6 +1,7 @@
-import requests
-import json
-from datetime import datetime
+# pyright: reportAttributeAccessIssue=false
+from .proto import client
+from .proto.market import market_pb2, market_pb2_grpc
+
 from .models import Period, Provider, Quote, MarketData
 
 MARKET_DATA: MarketData = MarketData(
@@ -17,16 +18,11 @@ PERIOD_MAPPING = {
     Period.MONTHLY: {"interval": "1mo", "range": "max"},
 }
 
-DEFAULT_API_BASE = "https://api.stoxlify.com"
-DEFAULT_TIMEOUT = 10
-
 
 def fetch(
     ticker: str,
     provider: Provider,
     period: Period,
-    api_base: str = DEFAULT_API_BASE,
-    timeout: int = DEFAULT_TIMEOUT,
 ) -> MarketData:
     global MARKET_DATA
 
@@ -38,58 +34,36 @@ def fetch(
     interval = PERIOD_MAPPING[period]["interval"]
     time_range = PERIOD_MAPPING[period]["range"]
 
-    url = f"{api_base}/v1/market/info"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "ticker": ticker,
-        "range": time_range,
-        "source": provider.value,
-        "interval": interval,
-        "indicator": "quote",
-    }
-
     try:
-        response = requests.post(
-            url, headers=headers, data=json.dumps(payload), timeout=timeout
+        c = client.channel()
+        stub = market_pb2_grpc.MarketServiceStub(c)
+        req = market_pb2.GetProductInfoRequest(
+            Ticker=ticker,
+            Range=time_range,
+            Interval=interval,
+            Indicator="quote",
+            Source=provider.value,
         )
-    except requests.RequestException as req_err:
-        raise RuntimeError(f"Request failed: {req_err}") from req_err
-
-    if not response.ok:
-        try:
-            error_info = response.json()
-            raise RuntimeError(
-                f"HTTP {response.status_code} - {error_info.get('message', 'Unknown error')}"
-            )
-        except ValueError:
-            raise RuntimeError(f"HTTP {response.status_code} - {response.text}")
-
-    try:
-        data = response.json()
-    except ValueError as json_err:
-        raise RuntimeError(f"JSON parsing error: {json_err}") from json_err
+        response = stub.GetProductInfo(req)
+    except Exception as err:
+        raise RuntimeError(f"request failed: {err}") from err
 
     quotes = []
-    for q in data.get("quote", []):
-        try:
-            ts = datetime.fromisoformat(q["timestamp"].replace("Z", "+00:00"))
-            price = q["product_info"]["price"]
 
-            if not all(k in price for k in ("open", "high", "low", "close")):
-                continue
+    for q in response.Quote:
+        ts = q.Timestamp.ToDatetime()
+        price = q.ProductInfo.Price
 
-            quote = Quote(
+        quotes.append(
+            Quote(
                 timestamp=ts,
-                high=price["high"],
-                low=price["low"],
-                open=price["open"],
-                close=price["close"],
-                volume=price["volume"],
+                high=price.High,
+                low=price.Low,
+                open=price.Open,
+                close=price.Close,
+                volume=price.Volume,
             )
-            quotes.append(quote)
-
-        except (KeyError, TypeError, ValueError):
-            continue
+        )
 
     MARKET_DATA.ticker = ticker
     MARKET_DATA.period = period

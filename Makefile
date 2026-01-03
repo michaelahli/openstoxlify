@@ -1,5 +1,5 @@
 PYTHON = python3
-VENV_DIR = venv
+VENV_DIR = .venv
 
 .PHONY: venv install build test upload clean setup release check-version
 
@@ -8,7 +8,7 @@ venv:
 
 install: venv
 	$(VENV_DIR)/bin/pip install --upgrade pip
-	$(VENV_DIR)/bin/pip install -r requirements.txt
+	$(VENV_DIR)/bin/pip install -e ".[dev]"
 
 build: venv
 	$(VENV_DIR)/bin/pip install build twine
