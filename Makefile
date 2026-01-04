@@ -44,4 +44,4 @@ check-version:
 	@grep '^version = ' pyproject.toml || echo "Version not found!"
 
 generate-proto:
-	sh openstoxlify/proto/generate.sh
+	sh openstoxlify/providers/stoxlify/proto/generate.sh

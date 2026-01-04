@@ -1,55 +1,56 @@
 import json
 
 from utcnow import utcnow
-from .plotter import PLOT_DATA
-from .strategy import STRATEGY_DATA
-from .models import PlotType
-from .fetch import MARKET_DATA, PERIOD_MAPPING
+
+from .context import Context
+from .models.enum import PlotType
+from .utils.common import find_range_interval
 
 
-def output():
-    """Generate the final output as JSON."""
+def output(ctx: Context):
     result = {}
 
-    result["histogram"] = [
+    plot_data = ctx.plots()
+    signal_data = ctx.signals()
+
+    result[PlotType.HISTOGRAM.value] = [
         {
-            "label": plot["label"],
-            "data": [item for item in plot["data"]],
-            "screen_index": plot["screen_index"],
+            "label": plot.label,
+            "data": [item.to_dict() for item in plot.data],
+            "screen_index": plot.screen_index,
         }
-        for plot in PLOT_DATA.get(PlotType.HISTOGRAM, [])
+        for plot in plot_data.get(PlotType.HISTOGRAM.value, [])
     ]
 
-    result["line"] = [
+    result[PlotType.LINE.value] = [
         {
-            "label": plot["label"],
-            "data": [item for item in plot["data"]],
-            "screen_index": plot["screen_index"],
+            "label": plot.label,
+            "data": [item.to_dict() for item in plot.data],
+            "screen_index": plot.screen_index,
         }
-        for plot in PLOT_DATA.get(PlotType.LINE, [])
+        for plot in plot_data.get(PlotType.LINE.value, [])
     ]
 
-    result["area"] = [
+    result[PlotType.AREA.value] = [
         {
-            "label": plot["label"],
-            "data": [item for item in plot["data"]],
-            "screen_index": plot["screen_index"],
+            "label": plot.label,
+            "data": [item.to_dict() for item in plot.data],
+            "screen_index": plot.screen_index,
         }
-        for plot in PLOT_DATA.get(PlotType.AREA, [])
+        for plot in plot_data.get(PlotType.AREA.value, [])
     ]
 
     result["strategy"] = [
         {
-            "label": entry["label"],
-            "data": [action for action in entry["data"]],
+            "label": "default",
+            "data": [item.to_dict() for item in signal_data],
         }
-        for entry in STRATEGY_DATA.get("strategy", [])
     ]
 
     result["quotes"] = {
-        "ticker": MARKET_DATA.ticker,
-        "interval": PERIOD_MAPPING[MARKET_DATA.period]["interval"],
-        "provider": MARKET_DATA.provider.value,
+        "ticker": ctx.symbol(),
+        "interval": find_range_interval(ctx.period()).interval,
+        "provider": ctx.provider().source(),
         "data": [
             {
                 "timestamp": utcnow.get(quote.timestamp.isoformat()),
@@ -59,7 +60,7 @@ def output():
                 "close": quote.close,
                 "volume": quote.volume,
             }
-            for quote in MARKET_DATA.quotes
+            for quote in ctx.quotes()
         ],
     }
 
