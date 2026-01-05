@@ -5,7 +5,7 @@ from typing import List
 from .proto import client
 from .proto.market import market_pb2, market_pb2_grpc
 
-from ...utils.common import find_range_interval
+from ...utils.period import find_range_interval
 from ...models.enum import DefaultProvider, Period
 from ...models.series import ActionSeries
 from ...models.model import Quote

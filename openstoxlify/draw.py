@@ -6,7 +6,7 @@ from typing import Dict, List
 from datetime import datetime
 
 from .context import Context
-from .utils.common import color_palette
+from .utils.color import color_palette
 from .models.enum import PlotType, ActionType
 
 
@@ -68,7 +68,7 @@ class Canvas:
             str: Hex color code (e.g., "#FF5733")
 
         Note:
-            Uses color_palette() from utils.common for predefined colors.
+            Uses color_palette() from utils.color for predefined colors.
         """
         opts = color_palette()
         if label not in self._color_map:

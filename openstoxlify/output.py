@@ -4,7 +4,7 @@ from utcnow import utcnow
 
 from .context import Context
 from .models.enum import PlotType
-from .utils.common import find_range_interval
+from .utils.period import find_range_interval
 
 
 def output(ctx: Context):
