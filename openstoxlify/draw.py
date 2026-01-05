@@ -11,7 +11,43 @@ from .models.enum import PlotType, ActionType
 
 
 class Canvas:
+    """
+    Professional financial chart renderer.
+
+    The Canvas class generates multi-panel matplotlib charts combining:
+    - OHLC candlestick charts
+    - Technical indicators (lines, histograms, areas)
+    - Trading signal markers and annotations
+    - Multiple subplot panels with independent scales
+
+    Attributes:
+        _plot_data (Dict): Indicator data organized by plot type
+        _market_data (List[Quote]): OHLCV market quotes
+        _strategy_data (List[ActionSeries]): Trading signals
+        _color_map (Dict[str, str]): Label-to-color mapping for consistency
+
+    Example:
+        >>> canvas = Canvas(ctx)
+        >>> canvas.draw(
+        ...     figsize=(16, 9),
+        ...     title="My Trading Strategy",
+        ...     show_legend=True
+        ... )
+    """
+
     def __init__(self, ctx: Context):
+        """
+        Initialize canvas from trading context.
+
+        Args:
+            ctx (Context): Trading context containing market data, plots,
+                and signals
+
+        Example:
+            >>> provider = Provider(DefaultProvider.YFinance)
+            >>> ctx = Context(provider, "AAPL", Period.DAILY)
+            >>> canvas = Canvas(ctx)
+        """
         self._plot_data = ctx.plots()
         self._market_data = ctx.quotes()
         self._strategy_data = ctx.signals()
@@ -19,12 +55,36 @@ class Canvas:
         self._color_map: Dict[str, str] = {}
 
     def _get_color(self, label):
+        """
+        Get or assign a consistent color for a label.
+
+        Colors are randomly assigned from the palette and cached to ensure
+        the same label always gets the same color across the chart.
+
+        Args:
+            label (str): Indicator label (e.g., "SMA 20")
+
+        Returns:
+            str: Hex color code (e.g., "#FF5733")
+
+        Note:
+            Uses color_palette() from utils.common for predefined colors.
+        """
         opts = color_palette()
         if label not in self._color_map:
             self._color_map[label] = random.choice(opts)
         return self._color_map[label]
 
     def _has_plotting_data(self) -> bool:
+        """
+        Check if there's any data to plot.
+
+        Returns:
+            bool: True if market data, signals, or plot data exists
+
+        Note:
+            Used internally to determine if chart rendering should proceed.
+        """
         return (
             len(self._market_data) > 0
             or len(self._strategy_data) > 0
@@ -32,6 +92,24 @@ class Canvas:
         )
 
     def _unique_screens(self) -> List[int]:
+        """
+        Identify unique screen indices from plot data.
+
+        Scans all plot data to find which screen indices are used,
+        ensuring screen 0 (main chart) is always included.
+
+        Returns:
+            List[int]: Sorted list of screen indices (e.g., [0, 1, 2])
+
+        Example:
+            >>> # If plots use screen_index 0, 1, 2
+            >>> canvas._unique_screens()
+            [0, 1, 2]
+
+        Note:
+            Screen 0 is always included even if no plots explicitly use it,
+            as it's reserved for the main price chart.
+        """
         screens = {
             item.screen_index
             for plot_type in (PlotType.HISTOGRAM, PlotType.LINE, PlotType.AREA)
@@ -41,6 +119,27 @@ class Canvas:
         return sorted(screens)
 
     def convert_timestamp(self, timestamp):
+        """
+        Convert timestamp to matplotlib date number.
+
+        Handles both string (ISO format) and datetime objects, converting
+        them to matplotlib's internal date representation for plotting.
+
+        Args:
+            timestamp: Either datetime object or ISO format string
+
+        Returns:
+            float: Matplotlib date number
+
+        Example:
+            >>> ts_str = "2024-01-01T00:00:00+00:00"
+            >>> num = canvas.convert_timestamp(ts_str)
+            >>> # Use num for matplotlib plotting
+
+        Note:
+            Matplotlib uses a float-based date system where the integer
+            part is days since 0001-01-01 UTC.
+        """
         if isinstance(timestamp, str):
             return float(mdates.date2num(datetime.fromisoformat(timestamp)))
         return float(mdates.date2num(timestamp))
@@ -63,24 +162,52 @@ class Canvas:
         area_alpha: float = 0.3,
         line_width: float = 2,
     ):
-        """Draw all charts with customizable options.
+        """
+        Render the complete financial chart.
+
+        Creates a professional multi-panel chart with candlesticks,
+        indicators, and trading signals. Automatically handles subplot
+        layout based on screen indices used in plot data.
 
         Args:
             show_legend (bool): Whether to show the legend. Default True.
             figsize (tuple): Figure size as (width, height). Default (12, 6).
-            offset_multiplier (float): Multiplier for trade annotation offset. Default 0.05.
+            offset_multiplier (float): Multiplier for trade annotation offset
+                from price. Default 0.05 (5% of price).
             rotation (int): Rotation angle for x-axis labels. Default 30.
-            ha (str): Horizontal alignment for x-axis labels. Default 'right'.
+            ha (str): Horizontal alignment for x-axis labels ('left', 'center',
+                'right'). Default 'right'.
             title (str): Chart title. Default 'Market Data Visualizations'.
             xlabel (str): X-axis label. Default 'Date'.
-            ylabel (str): Y-axis label. Default 'Price'.
-            candle_linewidth (float): Width of candle wick lines. Default 1.
-            candle_body_width (float): Width of candle body lines. Default 4.
-            marker_size (int): Size of trade markers. Default 8.
+            ylabel (str): Y-axis label for main chart. Default 'Price'.
+            candle_linewidth (float): Width of candlestick wick lines. Default 1.
+            candle_body_width (float): Width of candlestick body lines. Default 4.
+            marker_size (int): Size of trade signal markers. Default 8.
             annotation_fontsize (int): Font size for trade annotations. Default 9.
-            histogram_alpha (float): Transparency for histogram bars. Default 0.6.
-            area_alpha (float): Transparency for area plots. Default 0.3.
+            histogram_alpha (float): Transparency for histogram bars (0-1).
+                Default 0.6.
+            area_alpha (float): Transparency for area plots (0-1). Default 0.3.
             line_width (float): Width of line plots. Default 2.
+
+        Example:
+            >>> # Basic usage
+            >>> canvas.draw()
+            >>>
+            >>> # Customized for presentation
+            >>> canvas.draw(
+            ...     figsize=(16, 9),
+            ...     title="Bitcoin Trading Strategy",
+            ...     candle_body_width=6,
+            ...     marker_size=12,
+            ...     line_width=2.5
+            ... )
+
+        Note:
+            - Screen 0 is reserved for the main price chart with candlesticks
+            - Additional screens (1, 2, 3...) create separate subplot panels
+            - Each subplot has its own y-axis scale
+            - Long signals appear as blue upward triangles
+            - Short signals appear as purple downward triangles
         """
         screens = self._unique_screens()
         unique_screens_count = len(screens)
