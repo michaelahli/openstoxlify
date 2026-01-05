@@ -7,6 +7,7 @@ from datetime import datetime
 
 from .context import Context
 from .utils.color import color_palette
+from .utils.output import output
 from .models.enum import PlotType, ActionType
 
 
@@ -48,6 +49,7 @@ class Canvas:
             >>> ctx = Context(provider, "AAPL", Period.DAILY)
             >>> canvas = Canvas(ctx)
         """
+        self._ctx = ctx
         self._plot_data = ctx.plots()
         self._market_data = ctx.quotes()
         self._strategy_data = ctx.signals()
@@ -540,6 +542,9 @@ class Canvas:
             )
 
         self._configure_subplots(axes, show_legend)
+
+        if self._ctx.authenticated():
+            output(self._ctx)
 
         plt.tight_layout()
         plt.show()

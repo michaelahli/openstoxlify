@@ -1,8 +1,15 @@
+import sys
+
 from openstoxlify.context import Context
 from openstoxlify.draw import Canvas
+from openstoxlify.providers.stoxlify.provider import Provider as StoxlifyProvider
+
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
-from openstoxlify.providers.stoxlify.provider import Provider as StoxlifyProvider
+
+from openstoxlify.utils.token import fetch_token
+
+token = fetch_token(sys.argv)
 
 provider = StoxlifyProvider(DefaultProvider.YFinance)
 

@@ -165,7 +165,7 @@ class Context:
 
         self._signals.append(data)
 
-    def authenticate(self, token: str):
+    def authenticate(self, token: str | None):
         """
         Authenticate with the data provider.
 
@@ -180,6 +180,9 @@ class Context:
             >>> if ctx._authenticated:
             ...     ctx.execute()  # Can now execute trades
         """
+        if not token:
+            return
+
         try:
             self._provider.authenticate(token)
             self._token = token
@@ -279,3 +282,12 @@ class Context:
             Provider: Configured data provider
         """
         return self._provider
+
+    def authenticated(self) -> bool:
+        """
+        Get the authentication status.
+
+        Returns:
+            bool: Authentication status of a user
+        """
+        return self._authenticated
