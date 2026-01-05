@@ -2,7 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 from datetime import datetime
 
 from .context import Context
@@ -54,7 +54,7 @@ class Canvas:
 
         self._color_map: Dict[str, str] = {}
 
-    def _get_color(self, label):
+    def _get_color(self, label: str) -> str:
         """
         Get or assign a consistent color for a label.
 
@@ -68,7 +68,7 @@ class Canvas:
             str: Hex color code (e.g., "#FF5733")
 
         Note:
-            Uses color_palette() from utils.color for predefined colors.
+            Uses color_palette() from utils.common for predefined colors.
         """
         opts = color_palette()
         if label not in self._color_map:
@@ -118,7 +118,7 @@ class Canvas:
         screens.add(0)
         return sorted(screens)
 
-    def convert_timestamp(self, timestamp):
+    def convert_timestamp(self, timestamp) -> float:
         """
         Convert timestamp to matplotlib date number.
 
@@ -143,6 +143,305 @@ class Canvas:
         if isinstance(timestamp, str):
             return float(mdates.date2num(datetime.fromisoformat(timestamp)))
         return float(mdates.date2num(timestamp))
+
+    def _create_figure_and_axes(
+        self, screens: List[int], figsize: Tuple[float, float]
+    ) -> Tuple[Any, Any]:
+        """
+        Create matplotlib figure and axes layout.
+
+        Args:
+            screens (List[int]): List of screen indices to create
+            figsize (Tuple[float, float]): Figure size (width, height)
+
+        Returns:
+            Tuple[plt.Figure, Dict[int, plt.Axes]]: Figure and screen-to-axes mapping
+
+        Note:
+            Single screen creates one axis, multiple screens create
+            vertically stacked subplots with shared x-axis.
+        """
+        unique_screens_count = len(screens)
+
+        if unique_screens_count == 1:
+            fig, ax = plt.subplots(figsize=figsize)
+            axes = {screens[0]: ax}
+        else:
+            fig, axes_array = plt.subplots(
+                unique_screens_count, 1, figsize=figsize, sharex=True, squeeze=False
+            )
+            axes_array = axes_array.flatten()
+            axes = {screen_idx: axes_array[i] for i, screen_idx in enumerate(screens)}
+
+        return fig, axes
+
+    def _plot_histograms(self, axes: Any, histogram_alpha: float) -> None:
+        """
+        Render histogram plots on specified axes.
+
+        Args:
+            axes (Dict[int, plt.Axes]): Screen index to axes mapping
+            histogram_alpha (float): Transparency level (0-1)
+
+        Note:
+            Automatically calculates bar width based on data density.
+            Prevents duplicate legend entries for the same label.
+        """
+        plotted_histograms = set()
+
+        for plot in self._plot_data.get(PlotType.HISTOGRAM.value, []):
+            screen_idx = plot.screen_index
+
+            if screen_idx not in axes:
+                continue
+
+            ax = axes[screen_idx]
+
+            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
+            values = [item.value for item in plot.data]
+
+            bar_width = (
+                (max(timestamps) - min(timestamps)) / len(timestamps) * 0.8
+                if len(timestamps) > 1
+                else 0.5
+            )
+
+            label = plot.label if plot.label not in plotted_histograms else "_nolegend_"
+            plotted_histograms.add(plot.label)
+
+            ax.bar(
+                timestamps,
+                values,
+                label=label,
+                color=self._get_color(plot.label),
+                width=bar_width,
+                alpha=histogram_alpha,
+            )
+
+    def _plot_lines(self, axes: Any, line_width: float) -> None:
+        """
+        Render line plots on specified axes.
+
+        Args:
+            axes (Dict[int, plt.Axes]): Screen index to axes mapping
+            line_width (float): Line thickness
+
+        Note:
+            Used for indicators like moving averages, RSI, etc.
+        """
+        for plot in self._plot_data.get(PlotType.LINE.value, []):
+            screen_idx = plot.screen_index
+            if screen_idx not in axes:
+                continue
+
+            ax = axes[screen_idx]
+            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
+            values = [item.value for item in plot.data]
+
+            ax.plot(
+                timestamps,
+                values,
+                label=plot.label,
+                color=self._get_color(plot.label),
+                lw=line_width,
+            )
+
+    def _plot_areas(self, axes: Any, area_alpha: float) -> None:
+        """
+        Render area plots on specified axes.
+
+        Args:
+            axes (Dict[int, plt.Axes]): Screen index to axes mapping
+            area_alpha (float): Transparency level (0-1)
+
+        Note:
+            Used for filled regions like Bollinger Bands, clouds, etc.
+        """
+        for plot in self._plot_data.get(PlotType.AREA.value, []):
+            screen_idx = plot.screen_index
+            if screen_idx not in axes:
+                continue
+
+            ax = axes[screen_idx]
+            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
+            values = [item.value for item in plot.data]
+
+            ax.fill_between(
+                timestamps,
+                values,
+                label=plot.label,
+                color=self._get_color(plot.label),
+                alpha=area_alpha,
+            )
+
+    def _build_candle_lookup_table(self) -> Dict[str, Tuple[float, float]]:
+        """
+        Build lookup table mapping timestamps to matplotlib coordinates and prices.
+
+        Returns:
+            Dict[str, Tuple[float, float]]: Map of ISO timestamp to (x_coord, price)
+
+        Note:
+            Used for positioning trading signal markers on the chart.
+        """
+        candle_lut = {}
+
+        for item in self._market_data:
+            timestamp = item.timestamp
+            ts_str = timestamp if isinstance(timestamp, str) else timestamp.isoformat()
+            ts_num = self.convert_timestamp(timestamp)
+            price = item.close
+
+            candle_lut[ts_str] = (ts_num, price)
+
+        return candle_lut
+
+    def _render_candlesticks(
+        self, ax: Any, candle_linewidth: float, candle_body_width: float
+    ) -> None:
+        """
+        Render OHLC candlestick chart.
+
+        Args:
+            ax (plt.Axes): Matplotlib axes to draw on
+            candle_linewidth (float): Wick line width
+            candle_body_width (float): Body line width
+
+        Note:
+            Green candles for up days (close > open)
+            Red candles for down days (close < open)
+        """
+        for item in self._market_data:
+            ts_num = self.convert_timestamp(item.timestamp)
+
+            color = "green" if item.close > item.open else "red"
+
+            ax.vlines(ts_num, item.low, item.high, color=color, lw=candle_linewidth)
+            ax.vlines(ts_num, item.open, item.close, color=color, lw=candle_body_width)
+
+    def _render_trading_signals(
+        self,
+        ax: Any,
+        candle_lut: Dict[str, Tuple[float, float]],
+        offset_multiplier: float,
+        marker_size: int,
+        annotation_fontsize: int,
+    ) -> None:
+        """
+        Render trading signal markers and annotations.
+
+        Args:
+            ax (plt.Axes): Matplotlib axes to draw on
+            candle_lut (Dict): Timestamp to coordinate mapping
+            offset_multiplier (float): Marker offset as fraction of price
+            marker_size (int): Size of marker triangles
+            annotation_fontsize (int): Font size for annotations
+
+        Note:
+            LONG signals: Blue upward triangle below price
+            SHORT signals: Purple downward triangle above price
+        """
+        for trade in self._strategy_data:
+            ts_key = (
+                trade.timestamp
+                if isinstance(trade.timestamp, str)
+                else trade.timestamp.isoformat()
+            )
+
+            if ts_key not in candle_lut:
+                continue
+
+            ts_num, price = candle_lut[ts_key]
+            offset = price * offset_multiplier
+            direction = trade.action
+            amount = trade.amount
+
+            if direction == ActionType.LONG:
+                y = price - offset
+                ax.plot(ts_num, y, marker="^", color="blue", markersize=marker_size)
+                ax.annotate(
+                    f"LONG {amount}",
+                    xy=(ts_num, y),
+                    xytext=(0, -15),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=annotation_fontsize,
+                    color="blue",
+                )
+
+            elif direction == ActionType.SHORT:
+                y = price + offset
+                ax.plot(
+                    ts_num,
+                    y,
+                    marker="v",
+                    color="purple",
+                    markersize=marker_size,
+                )
+                ax.annotate(
+                    f"SHORT {amount}",
+                    xy=(ts_num, y),
+                    xytext=(0, 10),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=annotation_fontsize,
+                    color="purple",
+                )
+
+    def _configure_main_chart(
+        self,
+        ax: Any,
+        show_legend: bool,
+        title: str,
+        xlabel: str,
+        ylabel: str,
+        rotation: int,
+        ha: str,
+    ) -> None:
+        """
+        Configure main chart appearance and formatting.
+
+        Args:
+            ax (plt.Axes): Main chart axes
+            show_legend (bool): Whether to display legend
+            title (str): Chart title
+            xlabel (str): X-axis label
+            ylabel (str): Y-axis label
+            rotation (int): X-axis label rotation angle
+            ha (str): Horizontal alignment for x-axis labels
+
+        Note:
+            Automatically formats dates on x-axis and adds legend if requested.
+        """
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+
+        # Add legend if requested and there are items to show
+        if show_legend and ax.get_legend_handles_labels()[0]:
+            ax.legend()
+
+        # Format x-axis dates
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=rotation, ha=ha)
+
+    def _configure_subplots(self, axes: Any, show_legend: bool) -> None:
+        """
+        Configure additional subplot panels.
+
+        Args:
+            axes (Dict[int, plt.Axes]): Screen index to axes mapping
+            show_legend (bool): Whether to display legends
+
+        Note:
+            Each subplot gets a label indicating its screen index.
+        """
+        for screen_idx, ax in axes.items():
+            if screen_idx != 0:
+                ax.set_ylabel(f"Screen {screen_idx}")
+                if show_legend and ax.get_legend_handles_labels()[0]:
+                    ax.legend()
 
     def draw(
         self,
@@ -215,160 +514,32 @@ class Canvas:
         if unique_screens_count == 0:
             return
 
-        if unique_screens_count == 1:
-            fig, ax = plt.subplots(figsize=figsize)
-            axes = {screens[0]: ax}
-        else:
-            fig, axes_array = plt.subplots(
-                unique_screens_count, 1, figsize=figsize, sharex=True, squeeze=False
-            )
-            axes_array = axes_array.flatten()
-            axes = {screen_idx: axes_array[i] for i, screen_idx in enumerate(screens)}
+        fig, axes = self._create_figure_and_axes(screens, figsize)
 
-        plotted_histograms = set()
-        for plot in self._plot_data.get(PlotType.HISTOGRAM.value, []):
-            screen_idx = plot.screen_index
-
-            if screen_idx not in axes:
-                continue
-
-            ax = axes[screen_idx]
-
-            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
-            values = [item.value for item in plot.data]
-
-            bar_width = (
-                (max(timestamps) - min(timestamps)) / len(timestamps) * 0.8
-                if len(timestamps) > 1
-                else 0.5
-            )
-            label = plot.label if plot.label not in plotted_histograms else "_nolegend_"
-            plotted_histograms.add(plot.label)
-
-            ax.bar(
-                timestamps,
-                values,
-                label=label,
-                color=self._get_color(plot.label),
-                width=bar_width,
-                alpha=histogram_alpha,
-            )
-
-        for plot in self._plot_data.get(PlotType.LINE.value, []):
-            screen_idx = plot.screen_index
-            if screen_idx not in axes:
-                continue
-            ax = axes[screen_idx]
-            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
-            values = [item.value for item in plot.data]
-            ax.plot(
-                timestamps,
-                values,
-                label=plot.label,
-                color=self._get_color(plot.label),
-                lw=line_width,
-            )
-
-        for plot in self._plot_data.get(PlotType.AREA.value, []):
-            screen_idx = plot.screen_index
-            if screen_idx not in axes:
-                continue
-            ax = axes[screen_idx]
-            timestamps = [self.convert_timestamp(item.timestamp) for item in plot.data]
-            values = [item.value for item in plot.data]
-            ax.fill_between(
-                timestamps,
-                values,
-                label=plot.label,
-                color=self._get_color(plot.label),
-                alpha=area_alpha,
-            )
+        self._plot_histograms(axes, histogram_alpha)
+        self._plot_lines(axes, line_width)
+        self._plot_areas(axes, area_alpha)
 
         if 0 in axes:
             ax_main = axes[0]
 
-            candle_lut = {}
-            for item in self._market_data:
-                timestamp = item.timestamp
-                ts_str = (
-                    timestamp if isinstance(timestamp, str) else timestamp.isoformat()
-                )
-                ts_num = self.convert_timestamp(timestamp)
-                price = item.close
+            candle_lut = self._build_candle_lookup_table()
 
-                color = "green" if item.close > item.open else "red"
-                ax_main.vlines(
-                    ts_num, item.low, item.high, color=color, lw=candle_linewidth
-                )
-                ax_main.vlines(
-                    ts_num, item.open, item.close, color=color, lw=candle_body_width
-                )
+            self._render_candlesticks(ax_main, candle_linewidth, candle_body_width)
 
-                candle_lut[ts_str] = (ts_num, price)
+            self._render_trading_signals(
+                ax_main,
+                candle_lut,
+                offset_multiplier,
+                marker_size,
+                annotation_fontsize,
+            )
 
-            for trade in self._strategy_data:
-                ts_key = (
-                    trade.timestamp
-                    if isinstance(trade.timestamp, str)
-                    else trade.timestamp.isoformat()
-                )
+            self._configure_main_chart(
+                ax_main, show_legend, title, xlabel, ylabel, rotation, ha
+            )
 
-                if ts_key not in candle_lut:
-                    continue
-
-                ts_num, price = candle_lut[ts_key]
-                offset = price * offset_multiplier
-                direction = trade.action
-                amount = trade.amount
-
-                if direction == ActionType.LONG:
-                    y = price - offset
-                    ax_main.plot(
-                        ts_num, y, marker="^", color="blue", markersize=marker_size
-                    )
-                    ax_main.annotate(
-                        f"LONG {amount}",
-                        xy=(ts_num, y),
-                        xytext=(0, -15),
-                        textcoords="offset points",
-                        ha="center",
-                        fontsize=annotation_fontsize,
-                        color="blue",
-                    )
-                elif direction == ActionType.SHORT:
-                    y = price + offset
-                    ax_main.plot(
-                        ts_num,
-                        y,
-                        marker="v",
-                        color="purple",
-                        markersize=marker_size,
-                    )
-                    ax_main.annotate(
-                        f"SHORT {amount}",
-                        xy=(ts_num, y),
-                        xytext=(0, 10),
-                        textcoords="offset points",
-                        ha="center",
-                        fontsize=annotation_fontsize,
-                        color="purple",
-                    )
-
-            ax_main.set_xlabel(xlabel)
-            ax_main.set_ylabel(ylabel)
-            ax_main.set_title(title)
-            if show_legend and ax_main.get_legend_handles_labels()[0]:
-                ax_main.legend()
-
-            ax_main.xaxis.set_major_locator(mdates.AutoDateLocator())
-            ax_main.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
-            plt.setp(ax_main.xaxis.get_majorticklabels(), rotation=rotation, ha=ha)
-
-        for screen_idx, ax in axes.items():
-            if screen_idx != 0:
-                ax.set_ylabel(f"Screen {screen_idx}")
-                if show_legend and ax.get_legend_handles_labels()[0]:
-                    ax.legend()
+        self._configure_subplots(axes, show_legend)
 
         plt.tight_layout()
         plt.show()
