@@ -145,7 +145,7 @@ class TestContext(unittest.TestCase):
         token = "test_token_123"
         self.mock_provider.authenticate.return_value = None
 
-        self.ctx.authecticate(token)
+        self.ctx.authenticate(token)
 
         self.mock_provider.authenticate.assert_called_once_with(token)
         self.assertTrue(self.ctx._authenticated)
@@ -156,7 +156,7 @@ class TestContext(unittest.TestCase):
         token = "invalid_token"
         self.mock_provider.authenticate.side_effect = Exception("Auth failed")
 
-        self.ctx.authecticate(token)
+        self.ctx.authenticate(token)
 
         self.assertFalse(self.ctx._authenticated)
 
