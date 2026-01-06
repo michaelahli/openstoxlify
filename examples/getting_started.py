@@ -11,12 +11,10 @@ from openstoxlify.models.series import ActionSeries, FloatSeries
 
 from openstoxlify.utils.token import fetch_token
 
-token = fetch_token(sys.argv)
 
 provider = StoxlifyProvider(DefaultProvider.YFinance)
 
-ctx = Context(provider, "BTC-USD", Period.DAILY)
-ctx.authenticate(token)
+ctx = Context(sys.argv, provider, "BTC-USD", Period.DAILY)
 
 quotes = ctx.quotes()
 

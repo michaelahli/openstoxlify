@@ -1,5 +1,7 @@
 from typing import List, Dict
 
+from openstoxlify.utils.token import fetch_id, fetch_token
+
 from .models.contract import Provider
 from .models.enum import ActionType, PlotType
 from .models.series import ActionSeries, FloatSeries
@@ -33,7 +35,9 @@ class Context:
         >>> ctx.signal(ActionSeries(ts, ActionType.LONG, 1.0))
     """
 
-    def __init__(self, provider: Provider, symbol: str, period: Period):
+    def __init__(
+        self, agrv: List[str], provider: Provider, symbol: str, period: Period
+    ):
         """
         Initialize a new trading context.
 
@@ -56,8 +60,9 @@ class Context:
         self._plots: Dict[str, List[PlotData]] = {}
         self._signals: List[ActionSeries] = []
 
-        self._token: str = ""
         self._authenticated: bool = False
+        self._token: str | None = fetch_token(agrv)
+        self._id: str | None = fetch_id(agrv)
 
     def quotes(self) -> List[Quote]:
         """
@@ -165,7 +170,7 @@ class Context:
 
         self._signals.append(data)
 
-    def authenticate(self, token: str | None):
+    def authenticate(self):
         """
         Authenticate with the data provider.
 
@@ -180,12 +185,11 @@ class Context:
             >>> if ctx._authenticated:
             ...     ctx.execute()  # Can now execute trades
         """
-        if not token:
+        if not self._token:
             return
 
         try:
-            self._provider.authenticate(token)
-            self._token = token
+            self._provider.authenticate(self._token)
             self._authenticated = True
         except Exception:
             self._authenticated = False
@@ -225,7 +229,10 @@ class Context:
             case ActionType.HOLD:
                 return
 
-        self._provider.execute(self._symbol, signal, signal.amount)
+        if not self._id:
+            self._id = ""
+
+        self._provider.execute(self._id, self._symbol, signal, signal.amount)
 
     def plots(self) -> Dict[str, List[PlotData]]:
         """

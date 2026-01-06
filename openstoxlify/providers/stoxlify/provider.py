@@ -54,5 +54,7 @@ class Provider:
         self._token = token
         return
 
-    def execute(self, symbol: str, action: ActionSeries, amount: float) -> None:
+    def execute(
+        self, id: str, symbol: str, action: ActionSeries, amount: float
+    ) -> None:
         return
