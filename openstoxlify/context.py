@@ -194,7 +194,7 @@ class Context:
         except Exception:
             self._authenticated = False
 
-    def execute(self):
+    def execute(self, offset: int = 0):
         """
         Execute the latest trading signal.
 
@@ -204,6 +204,9 @@ class Context:
         3. The signal action is not HOLD
 
         The execution is delegated to the provider's execute method.
+
+        Args:
+            offset (int): trade at latest candle - offset
 
         Example:
             >>> ctx.authenticate("api-token")
@@ -218,7 +221,7 @@ class Context:
             return
 
         self._quotes.sort(key=lambda q: q.timestamp)
-        latest = self._quotes[-1].timestamp
+        latest = self._quotes[-1 - offset].timestamp
         hashmap = {s.timestamp: s for s in self._signals}
 
         signal = hashmap.get(latest)
