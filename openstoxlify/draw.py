@@ -419,11 +419,9 @@ class Canvas:
         ax.set_ylabel(ylabel)
         ax.set_title(title)
 
-        # Add legend if requested and there are items to show
         if show_legend and ax.get_legend_handles_labels()[0]:
             ax.legend()
 
-        # Format x-axis dates
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=rotation, ha=ha)

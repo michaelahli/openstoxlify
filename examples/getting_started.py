@@ -9,8 +9,6 @@ from openstoxlify.providers.stoxlify.provider import Provider as StoxlifyProvide
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
 
-from openstoxlify.utils.token import fetch_token
-
 
 provider = StoxlifyProvider(DefaultProvider.YFinance)
 
@@ -29,6 +27,9 @@ for quote in quotes:
 
 ctx.signal(ActionSeries(lowest.timestamp, ActionType.LONG, 1))
 ctx.signal(ActionSeries(highest.timestamp, ActionType.SHORT, 1))
+
+ctx.authenticate()
+ctx.execute()
 
 canvas = Canvas(ctx)
 canvas.draw()

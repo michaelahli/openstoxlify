@@ -1,6 +1,6 @@
 import grpc
 
-DEFAULT_GRPC_TARGET = "grpc.stoxlify.com:80"
+DEFAULT_GRPC_TARGET = "localhost:8091"
 
 
 def channel(target: str = DEFAULT_GRPC_TARGET):

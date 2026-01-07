@@ -42,6 +42,7 @@ class Context:
         Initialize a new trading context.
 
         Args:
+            agrv (List[str]): Script's input arguments
             provider (Provider): Data provider instance for fetching market data
             symbol (str): Trading symbol (e.g., "BTC-USD", "AAPL")
             period (Period): Timeframe for candles (DAILY, HOURLY, etc.)
@@ -217,7 +218,7 @@ class Context:
             This method is intended for live trading. In backtesting mode,
             signals are only recorded for analysis, not executed.
         """
-        if not self._authenticated:
+        if not self._authenticated or not self._token:
             return
 
         self._quotes.sort(key=lambda q: q.timestamp)
@@ -301,3 +302,12 @@ class Context:
             bool: Authentication status of a user
         """
         return self._authenticated
+
+    def id(self) -> str | None:
+        """
+        Get the context id.
+
+        Returns:
+            str | None: current context's unique identifier
+        """
+        return self._id

@@ -17,7 +17,9 @@ class TestContext(unittest.TestCase):
         self.mock_provider = Mock(spec=Provider)
         self.symbol = "BTC-USD"
         self.period = Period.DAILY
-        self.ctx = Context(self.mock_provider, self.symbol, self.period)
+        self.ctx = Context(
+            ["file.py", "token", "id"], self.mock_provider, self.symbol, self.period
+        )
 
     def test_initialization(self):
         """Test apakah Context di-initialize dengan benar"""
@@ -25,7 +27,7 @@ class TestContext(unittest.TestCase):
         self.assertEqual(self.ctx.period(), self.period)
         self.assertEqual(self.ctx.provider(), self.mock_provider)
         self.assertFalse(self.ctx._authenticated)
-        self.assertEqual(self.ctx._token, "")
+        self.assertEqual(self.ctx._token, "token")
 
     def test_quotes_first_call(self):
         """Test quotes() memanggil provider saat pertama kali"""
@@ -142,21 +144,17 @@ class TestContext(unittest.TestCase):
 
     def test_authenticate_success(self):
         """Test authenticate() berhasil"""
-        token = "test_token_123"
         self.mock_provider.authenticate.return_value = None
 
-        self.ctx.authenticate(token)
+        self.ctx.authenticate()
 
-        self.mock_provider.authenticate.assert_called_once_with(token)
         self.assertTrue(self.ctx._authenticated)
-        self.assertEqual(self.ctx._token, token)
 
     def test_authenticate_failure(self):
         """Test authenticate() gagal"""
-        token = "invalid_token"
         self.mock_provider.authenticate.side_effect = Exception("Auth failed")
 
-        self.ctx.authenticate(token)
+        self.ctx.authenticate()
 
         self.assertFalse(self.ctx._authenticated)
 
@@ -239,9 +237,12 @@ class TestContext(unittest.TestCase):
         signal = ActionSeries(timestamp, ActionType.LONG, 2.5)
         self.ctx.signal(signal)
 
+        self.ctx.authenticate()
         self.ctx.execute()
 
-        self.mock_provider.execute.assert_called_once_with(self.symbol, signal, 2.5)
+        self.mock_provider.execute.assert_called_once_with(
+            "id", self.symbol, signal, 2.5
+        )
 
 
 if __name__ == "__main__":

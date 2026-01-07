@@ -49,7 +49,9 @@ class TestIntegration(unittest.TestCase):
         ]
         self.mock_provider.quotes.return_value = mock_quotes
 
-        ctx = Context(self.mock_provider, self.symbol, self.period)
+        ctx = Context(
+            ["file.py", "token", "id"], self.mock_provider, self.symbol, self.period
+        )
 
         quotes = ctx.quotes()
         self.assertEqual(len(quotes), 3)
@@ -104,7 +106,9 @@ class TestIntegration(unittest.TestCase):
         ]
         self.mock_provider.quotes.return_value = mock_quotes
 
-        ctx = Context(self.mock_provider, self.symbol, self.period)
+        ctx = Context(
+            ["file.py", "token", "id"], self.mock_provider, self.symbol, self.period
+        )
         quotes = ctx.quotes()
 
         for quote in quotes:
