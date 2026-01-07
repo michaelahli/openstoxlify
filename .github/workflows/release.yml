@@ -18,30 +18,40 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install build dependencies
+      - name: Upgrade pip
         run: |
           python -m pip install --upgrade pip
+
+      - name: Install build tools
+        run: |
           pip install build twine pytest
-
-      - name: Install package with dependencies
-        run: |
-          pip install -e .
-
-      - name: Verify installation
-        run: |
-          python -c "import openstoxlify"
-          python -c "import matplotlib"
-          python -c "import requests"
-
-      - name: Run tests
-        run: |
-          pytest tests/ -v --tb=short
 
       - name: Build package
         run: |
           python -m build
 
-      - name: Check package
+      - name: Inspect wheel contents
+        run: |
+          unzip -l dist/*.whl | grep openstoxlify/providers/stoxlify/proto/trade
+
+      - name: Install built wheel
+        run: |
+          pip install dist/*.whl
+
+      - name: Verify imports
+        run: |
+          python - <<EOF
+          import openstoxlify
+          from openstoxlify.providers.stoxlify.provider import Provider
+          from openstoxlify.providers.stoxlify.proto.trade import trade_pb2, trade_pb2_grpc
+          print("✔ All imports succeeded")
+          EOF
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --tb=short
+
+      - name: Check distribution
         run: |
           twine check dist/*
 
