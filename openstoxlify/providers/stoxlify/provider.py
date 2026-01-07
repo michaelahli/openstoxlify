@@ -4,9 +4,11 @@ from typing import List
 
 from .proto import client
 from .proto.market import market_pb2, market_pb2_grpc
+from .proto.trade import trade_pb2, trade_pb2_grpc
+from .proto.model import model_pb2
 
 from ...utils.period import find_range_interval
-from ...models.enum import DefaultProvider, Period
+from ...models.enum import ActionType, DefaultProvider, Period
 from ...models.series import ActionSeries
 from ...models.model import Quote
 
@@ -57,4 +59,21 @@ class Provider:
     def execute(
         self, id: str, symbol: str, action: ActionSeries, amount: float
     ) -> None:
+        try:
+            a = trade_pb2.Short
+            if action.action == ActionType.LONG:
+                a = trade_pb2.Long
+            task = model_pb2.Task(TaskId=id, Ticker=symbol)
+            req = trade_pb2.ExecuteTradeRequest(
+                Task=task,
+                Action=a,
+                Quantity=int(amount),
+            )
+            meta = (("authorization", f"Bearer {self._token}"),)
+            c = client.channel()
+            stub = trade_pb2_grpc.TradeServiceStub(c)
+            trade = stub.ExecuteTrade(req, metadata=meta)
+        except Exception as err:
+            raise RuntimeError(f"request failed: {err}") from err
+
         return
