@@ -28,8 +28,11 @@ for quote in quotes:
 ctx.signal(ActionSeries(lowest.timestamp, ActionType.LONG, 1))
 ctx.signal(ActionSeries(highest.timestamp, ActionType.SHORT, 1))
 
-ctx.authenticate()
-ctx.execute()
-
 canvas = Canvas(ctx)
 canvas.draw()
+
+# NOTE:
+# Authentication & execution ONLY required for LIVE TRADING automation.
+# Optionals when running locally (analysis / backtest / charting only).
+ctx.authenticate()
+ctx.execute()

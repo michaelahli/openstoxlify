@@ -10,26 +10,28 @@ A lightweight Python library for algorithmic trading and market analysis with pr
 
 ## ✨ Key Features
 
-- **Multi-source data**: Fetch from Yahoo Finance, Binance, and more
+- **Multi-source data**: Fetch from Yahoo Finance, Binance, and more via gRPC
 - **Context-based API**: Clean, fluent interface for strategy development
 - **Strategy engine**: Record and visualize trading signals
 - **Professional charts**: OHLC candles, indicators, and strategy markers
-- **Flexible outputs**: Interactive plots and JSON for programmatic use
+- **Live trading**: Authentication and execution support for automated trading
+- **Flexible outputs**: Interactive plots and JSON exports
 
 ---
 
 ## 🚀 Quick Start
 
 ```python
+import sys
 from openstoxlify.context import Context
 from openstoxlify.draw import Canvas
+from openstoxlify.providers.stoxlify.provider import Provider
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
-from openstoxlify.providers.stoxlify.provider import Provider
 
 # 1. Initialize provider and context
 provider = Provider(DefaultProvider.YFinance)
-ctx = Context(provider, "AAPL", Period.DAILY)
+ctx = Context(sys.argv, provider, "AAPL", Period.DAILY)
 
 # 2. Get market data
 quotes = ctx.quotes()
@@ -44,6 +46,10 @@ ctx.signal(ActionSeries(quotes[0].timestamp, ActionType.LONG, 1.0))
 # 5. Visualize
 canvas = Canvas(ctx)
 canvas.draw()
+
+# 6. (Optional) Live trading - requires authentication
+ctx.authenticate()
+ctx.execute()
 ```
 
 ---
@@ -74,13 +80,14 @@ python examples/getting_started.py
 | grpcio     | 1.50+           | For data provider communication |
 | matplotlib | 3.5+            | Required for visualization      |
 | protobuf   | 4.0+            | For protocol buffers            |
+| utcnow     | Latest          | For timestamp handling          |
 
 ### Troubleshooting
 
 1. **Missing Dependencies**:
 
    ```bash
-   pip install --upgrade grpcio matplotlib protobuf
+   pip install --upgrade grpcio matplotlib protobuf utcnow
    ```
 
 2. **Permission Issues** (Linux/Mac):
@@ -105,6 +112,7 @@ python examples/getting_started.py
 The `Context` class is the heart of OpenStoxlify. It manages your market data, plots, and trading signals in one place.
 
 ```python
+import sys
 from openstoxlify.context import Context
 from openstoxlify.providers.stoxlify.provider import Provider
 from openstoxlify.models.enum import DefaultProvider, Period
@@ -114,6 +122,7 @@ provider = Provider(DefaultProvider.YFinance)
 
 # Create trading context
 ctx = Context(
+    agrv=sys.argv,           # Command-line arguments
     provider=provider,
     symbol="BTC-USD",
     period=Period.DAILY
@@ -127,23 +136,90 @@ ctx = Context(
 | `quotes()`              | Get market data (cached)          | `List[Quote]`   |
 | `plot(label, type, data, screen_index)` | Add plot data | `None`          |
 | `signal(action_series)` | Record trading signal             | `None`          |
-| `authenticate(token)`   | Authenticate with provider        | `None`          |
-| `execute()`             | Execute latest trading signal     | `None`          |
+| `authenticate()`        | Authenticate with provider token  | `None`          |
+| `execute(offset=0)`     | Execute latest trading signal     | `None`          |
 | `plots()`               | Get all plot data                 | `Dict`          |
 | `signals()`             | Get all trading signals           | `List`          |
+| `symbol()`              | Get current trading symbol        | `str`           |
+| `period()`              | Get current timeframe             | `Period`        |
+| `provider()`            | Get provider instance             | `Provider`      |
+| `authenticated()`       | Check authentication status       | `bool`          |
+| `id()`                  | Get context unique identifier     | `str \| None`   |
 
 ---
 
-### 2. Providers - Data Sources
+### 2. Providers - Custom Data Sources
 
-**Supported Providers**:
+**Provider Protocol**:
+
+OpenStoxlify uses a protocol-based provider system, allowing you to implement your own data sources. Any class that implements the `Provider` protocol will work:
 
 ```python
+from typing import List, Protocol
+from openstoxlify.models.model import Quote
+from openstoxlify.models.enum import Period
+from openstoxlify.models.series import ActionSeries
+
+@runtime_checkable
+class Provider(Protocol):
+    def source(self) -> str:
+        """Return provider name/identifier"""
+        ...
+    
+    def quotes(self, symbol: str, period: Period) -> List[Quote]:
+        """Fetch OHLCV market data"""
+        ...
+    
+    def authenticate(self, token: str) -> None:
+        """Authenticate with provider (optional for live trading)"""
+        ...
+    
+    def execute(self, id: str, symbol: str, action: ActionSeries, amount: float) -> None:
+        """Execute trade (optional for live trading)"""
+        ...
+```
+
+**Built-in Stoxlify Provider**:
+
+The included `stoxlify.provider.Provider` is just one implementation using gRPC:
+
+```python
+from openstoxlify.providers.stoxlify.provider import Provider
 from openstoxlify.models.enum import DefaultProvider
 
-# Available providers
-DefaultProvider.YFinance  # Yahoo Finance
-DefaultProvider.Binance   # Binance (crypto)
+# Using built-in provider
+provider = Provider(DefaultProvider.YFinance)  # Yahoo Finance
+provider = Provider(DefaultProvider.Binance)   # Binance (crypto)
+```
+
+**Implement Your Own Provider**:
+
+```python
+from typing import List
+from openstoxlify.models.model import Quote
+from openstoxlify.models.enum import Period
+from openstoxlify.models.series import ActionSeries
+
+class MyCustomProvider:
+    def source(self) -> str:
+        return "MyDataSource"
+    
+    def quotes(self, symbol: str, period: Period) -> List[Quote]:
+        # Fetch from your API, database, CSV, etc.
+        # Must return List[Quote] with UTC timestamps
+        return my_fetch_logic(symbol, period)
+    
+    def authenticate(self, token: str) -> None:
+        # Optional: implement if you need authentication
+        self.api_key = token
+    
+    def execute(self, id: str, symbol: str, action: ActionSeries, amount: float) -> None:
+        # Optional: implement if you support live trading
+        pass
+
+# Use your custom provider
+provider = MyCustomProvider()
+ctx = Context(sys.argv, provider, "AAPL", Period.DAILY)
 ```
 
 **Available Timeframes**:
@@ -154,20 +230,29 @@ DefaultProvider.Binance   # Binance (crypto)
 | `Period.QUINTLY`    | 5m       | 5-minute candles   |
 | `Period.HALFHOURLY` | 30m      | 30-minute candles  |
 | `Period.HOURLY`     | 60m      | 1-hour candles     |
-| `Period.DAILY`      | 1d       | Daily candles      |
-| `Period.WEEKLY`     | 1w       | Weekly candles     |
-| `Period.MONTHLY`    | 1mo      | Monthly candles    |
+| `Period.DAILY`      | D        | Daily candles      |
+| `Period.WEEKLY`     | W        | Weekly candles     |
+| `Period.MONTHLY`    | M        | Monthly candles    |
 
-**Example**:
+**Example with Custom Provider**:
 
 ```python
-from openstoxlify.providers.stoxlify.provider import Provider
-from openstoxlify.models.enum import DefaultProvider
+import sys
+from openstoxlify.context import Context
+from openstoxlify.models.enum import Period
 
-provider = Provider(DefaultProvider.Binance)
-ctx = Context(provider, "BTCUSDT", Period.HOURLY)
+# Your custom implementation
+provider = MyCustomProvider()
+ctx = Context(sys.argv, provider, "BTCUSDT", Period.HOURLY)
 quotes = ctx.quotes()
 ```
+
+**Provider Requirements**:
+
+- Must implement the `Provider` protocol (see `models/contract.py`)
+- `quotes()` must return `List[Quote]` with timezone-aware UTC timestamps
+- `authenticate()` and `execute()` are optional (only needed for live trading)
+- You can fetch data from any source: REST APIs, databases, CSV files, websockets, etc.
 
 ---
 
@@ -198,6 +283,7 @@ ctx.plot(
 | `PlotType.LINE`     | Continuous line          | Moving averages, price lines |
 | `PlotType.HISTOGRAM`| Vertical bars            | Volume, MACD histogram       |
 | `PlotType.AREA`     | Filled area under curve  | Bollinger Bands, clouds      |
+| `PlotType.CANDLESTICK` | OHLC candles          | Price action (internal)      |
 
 **Multi-Screen Layouts**:
 
@@ -285,12 +371,14 @@ canvas.draw(
 ### Basic Usage
 
 ```python
+import sys
 from openstoxlify.context import Context
 from openstoxlify.draw import Canvas
 from openstoxlify.providers.stoxlify.provider import Provider
+from openstoxlify.models.enum import DefaultProvider, Period
 
 provider = Provider(DefaultProvider.YFinance)
-ctx = Context(provider, "AAPL", Period.DAILY)
+ctx = Context(sys.argv, provider, "AAPL", Period.DAILY)
 
 # Add your plots and signals...
 
@@ -359,16 +447,17 @@ canvas.draw(
 ### 1. Simple Trading Strategy (from `getting_started.py`)
 
 ```python
+import sys
 from statistics import median
 from openstoxlify.context import Context
 from openstoxlify.draw import Canvas
+from openstoxlify.providers.stoxlify.provider import Provider
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
-from openstoxlify.providers.stoxlify.provider import Provider
 
 # Setup
 provider = Provider(DefaultProvider.YFinance)
-ctx = Context(provider, "BTC-USD", Period.DAILY)
+ctx = Context(sys.argv, provider, "BTC-USD", Period.DAILY)
 
 # Get market data
 quotes = ctx.quotes()
@@ -392,132 +481,147 @@ ctx.signal(ActionSeries(highest.timestamp, ActionType.SHORT, 1))
 # Visualize
 canvas = Canvas(ctx)
 canvas.draw()
+
+# Optional: Live trading (requires authentication token via command line)
+ctx.authenticate()
+ctx.execute()
 ```
 
-### 2. Moving Average Crossover
+### 2. Multi-Indicator Strategy (from `subplots.py`)
 
 ```python
+import sys
 from openstoxlify.context import Context
 from openstoxlify.draw import Canvas
+from openstoxlify.providers.stoxlify.provider import Provider
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
-from openstoxlify.providers.stoxlify.provider import Provider
 
-def calculate_sma(prices, period):
-    """Simple Moving Average"""
+provider = Provider(DefaultProvider.YFinance)
+ctx = Context(sys.argv, provider, "BTC-USD", Period.DAILY)
+market_data = ctx.quotes()
+
+# Helper functions
+def calculate_average(market_data, window):
+    prices = [q.close for q in market_data]
     return [
-        sum(prices[i:i+period]) / period 
-        for i in range(len(prices) - period + 1)
+        (market_data[i + window - 1].timestamp, sum(prices[i:i + window]) / window)
+        for i in range(len(prices) - window + 1)
     ]
 
-# Setup
-provider = Provider(DefaultProvider.YFinance)
-ctx = Context(provider, "AAPL", Period.DAILY)
-quotes = ctx.quotes()
+def calculate_macd(market_data, fast_period, slow_period, signal_period):
+    closes = [q.close for q in market_data]
+    fast = [sum(closes[i:i+fast_period])/fast_period for i in range(len(closes)-fast_period+1)]
+    slow = [sum(closes[i:i+slow_period])/slow_period for i in range(len(closes)-slow_period+1)]
+    macd_line = [f - s for f, s in zip(fast, slow)]
+    signal_line = [sum(macd_line[i:i+signal_period])/signal_period 
+                   for i in range(len(macd_line)-signal_period+1)]
+    histogram = [m - s for m, s in zip(macd_line[-len(signal_line):], signal_line)]
+    timestamps = [market_data[i].timestamp 
+                  for i in range(slow_period+signal_period-2, len(closes))]
+    return [(t, h) for t, h in zip(timestamps, histogram)]
+
+def calculate_stochastic(market_data, period):
+    results = []
+    for i in range(period - 1, len(market_data)):
+        high_range = max(q.high for q in market_data[i-period+1:i+1])
+        low_range = min(q.low for q in market_data[i-period+1:i+1])
+        close = market_data[i].close
+        value = 100 * ((close - low_range) / (high_range - low_range)) if high_range != low_range else 50
+        results.append((market_data[i].timestamp, value))
+    return results
 
 # Calculate indicators
-closes = [q.close for q in quotes]
-sma_20 = calculate_sma(closes, 20)
-sma_50 = calculate_sma(closes, 50)
+ma_fast = calculate_average(market_data, 20)
+ma_slow = calculate_average(market_data, 50)
+macd_hist = calculate_macd(market_data, 12, 26, 9)
+stochastic = calculate_stochastic(market_data, 14)
 
-# Plot price and moving averages
-for i, quote in enumerate(quotes):
-    ctx.plot("Price", PlotType.LINE, FloatSeries(quote.timestamp, quote.close))
-    
-    if i >= 19:  # SMA 20 starts at index 19
-        sma_20_idx = i - 19
-        ctx.plot("SMA 20", PlotType.LINE, FloatSeries(quote.timestamp, sma_20[sma_20_idx]))
-    
-    if i >= 49:  # SMA 50 starts at index 49
-        sma_50_idx = i - 49
-        ctx.plot("SMA 50", PlotType.LINE, FloatSeries(quote.timestamp, sma_50[sma_50_idx]))
-        
-        # Generate signals on crossovers
-        if sma_50_idx > 0:
-            prev_fast = sma_20[sma_20_idx - 1]
-            prev_slow = sma_50[sma_50_idx - 1]
-            curr_fast = sma_20[sma_20_idx]
-            curr_slow = sma_50[sma_50_idx]
-            
-            # Bullish crossover
-            if prev_fast <= prev_slow and curr_fast > curr_slow:
-                ctx.signal(ActionSeries(quote.timestamp, ActionType.LONG, 1.0))
-            
-            # Bearish crossover
-            elif prev_fast >= prev_slow and curr_fast < curr_slow:
-                ctx.signal(ActionSeries(quote.timestamp, ActionType.SHORT, 1.0))
+# Plot price and indicators
+for q in market_data:
+    ctx.plot("Price", PlotType.LINE, FloatSeries(q.timestamp, q.close))
+
+for t, v in ma_fast:
+    ctx.plot("MA 20", PlotType.LINE, FloatSeries(t, v))
+
+for t, v in ma_slow:
+    ctx.plot("MA 50", PlotType.LINE, FloatSeries(t, v))
+
+for t, v in macd_hist:
+    ctx.plot("MACD Histogram", PlotType.HISTOGRAM, FloatSeries(t, v), 1)
+
+for t, v in stochastic:
+    ctx.plot("Stochastic", PlotType.LINE, FloatSeries(t, v), 2)
+
+# Generate signals based on multiple indicators
+ma_fast_dict = dict(ma_fast)
+ma_slow_dict = dict(ma_slow)
+macd_dict = dict(macd_hist)
+stoch_dict = dict(stochastic)
+
+for q in market_data:
+    ts = q.timestamp
+    if all(ts in d for d in [ma_fast_dict, ma_slow_dict, macd_dict, stoch_dict]):
+        if ma_fast_dict[ts] > ma_slow_dict[ts] and macd_dict[ts] > 0 and stoch_dict[ts] < 20:
+            ctx.signal(ActionSeries(ts, ActionType.LONG, 1))
+        elif ma_fast_dict[ts] < ma_slow_dict[ts] and macd_dict[ts] < 0 and stoch_dict[ts] > 80:
+            ctx.signal(ActionSeries(ts, ActionType.SHORT, 1))
 
 # Visualize
-canvas = Canvas(ctx)
-canvas.draw(title="SMA Crossover Strategy", figsize=(14, 8))
-```
-
-### 3. Multi-Indicator Strategy (from `subplots.py`)
-
-See the full example in `examples/subplots.py` which demonstrates:
-
-- Multiple screen layouts
-- MACD histogram on subplot
-- Stochastic oscillator on separate panel
-- Combined signal generation from multiple indicators
-
----
-
-## 🔄 Migration Guide (Old API → New API)
-
-### Before (Old API)
-
-```python
-from openstoxlify.fetch import fetch
-from openstoxlify.plotter import plot
-from openstoxlify.strategy import act
-from openstoxlify.draw import draw
-from openstoxlify.models import Period, Provider, PlotType, ActionType
-
-# Old way
-market_data = fetch("BTCUSDT", Provider.Binance, Period.MINUTELY)
-quotes = market_data.quotes
-
-for quote in quotes:
-    plot(PlotType.LINE, "Median", quote.timestamp, median_value)
-
-act(ActionType.LONG, lowest.timestamp, 1)
-draw()
-```
-
-### After (New API)
-
-```python
-from openstoxlify.context import Context
-from openstoxlify.draw import Canvas
-from openstoxlify.models.enum import DefaultProvider, Period, PlotType, ActionType
-from openstoxlify.models.series import FloatSeries, ActionSeries
-from openstoxlify.providers.stoxlify.provider import Provider
-
-# New way - Context-based
-provider = Provider(DefaultProvider.Binance)
-ctx = Context(provider, "BTCUSDT", Period.MINUTELY)
-
-quotes = ctx.quotes()
-
-for quote in quotes:
-    ctx.plot("Median", PlotType.LINE, FloatSeries(quote.timestamp, median_value))
-
-ctx.signal(ActionSeries(lowest.timestamp, ActionType.LONG, 1))
-
 canvas = Canvas(ctx)
 canvas.draw()
 ```
 
-### Key Changes
+---
 
-| Old API                          | New API                                    |
-| -------------------------------- | ------------------------------------------ |
-| `fetch(symbol, provider, period)` | `Context(provider, symbol, period).quotes()` |
-| `plot(type, label, ts, value)`   | `ctx.plot(label, type, FloatSeries(ts, value))` |
-| `act(action, timestamp, amount)` | `ctx.signal(ActionSeries(ts, action, amount))` |
-| `draw()`                         | `Canvas(ctx).draw()`                       |
-| Import from `models`             | Import from `models.enum`, `models.series` |
+## 🔐 Authentication & Execution
+
+### Command-Line Token Passing
+
+For live trading with supported providers, pass authentication tokens via command-line arguments:
+
+```bash
+python my_strategy.py --token YOUR_API_TOKEN --id YOUR_TASK_ID
+```
+
+### In Your Code
+
+```python
+import sys
+from openstoxlify.context import Context
+
+# Context automatically extracts token and id from sys.argv
+ctx = Context(sys.argv, provider, "AAPL", Period.DAILY)
+
+# Authenticate (validates token with provider)
+ctx.authenticate()
+
+# Execute the latest signal
+ctx.execute()  # Only executes if authenticated
+
+# Or execute at specific offset
+ctx.execute(offset=1)  # Execute at second-to-last candle
+```
+
+**Execution Requirements**:
+
+The `execute()` method will only run if:
+
+1. Context is authenticated (`ctx.authenticated() == True`)
+2. There's a signal at the target timestamp
+3. The signal is not `ActionType.HOLD`
+4. Valid token and task ID are provided
+
+**Token Extraction**:
+
+The `utils.token` module handles token extraction from command-line arguments:
+
+```python
+from openstoxlify.utils.token import fetch_token, fetch_id
+
+token = fetch_token(sys.argv)  # Extracts from --token flag
+task_id = fetch_id(sys.argv)   # Extracts from --id flag
+```
 
 ---
 
@@ -530,7 +634,7 @@ canvas.draw()
 ```python
 @dataclass
 class Quote:
-    timestamp: datetime  # Time of measurement
+    timestamp: datetime  # Time of measurement (timezone-aware UTC)
     high: float          # Period high price
     low: float           # Period low price
     open: float          # Opening price
@@ -545,6 +649,9 @@ class Quote:
 class FloatSeries:
     timestamp: datetime  # Data point time
     value: float         # Indicator value
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON export"""
 ```
 
 #### ActionSeries
@@ -554,54 +661,20 @@ class FloatSeries:
 class ActionSeries:
     timestamp: datetime  # Signal time
     action: ActionType   # LONG, SHORT, or HOLD
-    amount: float        # Position size
+    amount: float        # Position size (default 0.0)
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON export"""
 ```
 
----
-
-## 🔐 Authentication & Execution
-
-For live trading with supported providers:
+#### PlotData
 
 ```python
-# Authenticate
-ctx.authenticate("your-api-token")
-
-# Execute the latest signal
-ctx.execute()  # Only executes if authenticated
-```
-
-**Note**: `execute()` will only run if:
-
-1. Context is authenticated
-2. There's a signal at the latest timestamp
-3. The signal is not `ActionType.HOLD`
-
----
-
-## 💡 Best Practices
-
-1. **Cache quotes**: Context automatically caches `quotes()` calls per symbol
-2. **Use screen_index**: Separate indicators into different panels for clarity
-3. **Consistent timestamps**: All timestamps are timezone-aware UTC
-4. **Plot incrementally**: Call `ctx.plot()` in loops for time-series data
-5. **Signal at decision points**: Only call `ctx.signal()` when strategy makes a decision
-
----
-
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage
-pytest tests/ --cov=openstoxlify --cov-report=html
-
-# Run specific test file
-pytest tests/test_context.py -v
+@dataclass
+class PlotData:
+    label: str                    # Indicator name
+    data: List[FloatSeries]       # Time series data
+    screen_index: int             # Subplot panel (0 = main)
 ```
 
 ---

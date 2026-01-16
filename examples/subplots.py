@@ -7,13 +7,9 @@ from openstoxlify.providers.stoxlify.provider import Provider as StoxlifyProvide
 from openstoxlify.models.enum import ActionType, DefaultProvider, Period, PlotType
 from openstoxlify.models.series import ActionSeries, FloatSeries
 
-from openstoxlify.utils.token import fetch_token
-
-token = fetch_token(sys.argv)
-
 provider = StoxlifyProvider(DefaultProvider.YFinance)
 
-ctx = Context(provider, "BTC-USD", Period.DAILY)
+ctx = Context(sys.argv, provider, "BTC-USD", Period.DAILY)
 
 market_data = ctx.quotes()
 
