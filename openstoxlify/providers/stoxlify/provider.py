@@ -74,6 +74,4 @@ class Provider:
             stub = trade_pb2_grpc.TradeServiceStub(c)
             trade = stub.ExecuteTrade(req, metadata=meta)
         except Exception as err:
-            raise RuntimeError(f"request failed: {err}") from err
-
-        return
+            return
