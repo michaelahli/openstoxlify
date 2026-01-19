@@ -582,7 +582,7 @@ canvas.draw()
 For live trading with supported providers, pass authentication tokens via command-line arguments:
 
 ```bash
-python my_strategy.py --token YOUR_API_TOKEN --id YOUR_TASK_ID
+python my_strategy.py YOUR_API_TOKEN YOUR_ID
 ```
 
 ### In Your Code
@@ -611,18 +611,7 @@ The `execute()` method will only run if:
 1. Context is authenticated (`ctx.authenticated() == True`)
 2. There's a signal at the target timestamp
 3. The signal is not `ActionType.HOLD`
-4. Valid token and task ID are provided
-
-**Token Extraction**:
-
-The `utils.token` module handles token extraction from command-line arguments:
-
-```python
-from openstoxlify.utils.token import fetch_token, fetch_id
-
-token = fetch_token(sys.argv)  # Extracts from --token flag
-task_id = fetch_id(sys.argv)   # Extracts from --id flag
-```
+4. Valid token and ID are provided
 
 ---
 
