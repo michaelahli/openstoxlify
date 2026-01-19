@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Protocol, runtime_checkable
 
 from .series import ActionSeries
@@ -9,7 +10,13 @@ from .enum import Period
 class Provider(Protocol):
     def source(self) -> str: ...
 
-    def quotes(self, symbol: str, period: Period) -> List[Quote]: ...
+    def quotes(
+        self,
+        symbol: str,
+        period: Period,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> List[Quote]: ...
 
     def authenticate(self, token: str) -> None: ...
 

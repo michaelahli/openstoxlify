@@ -53,7 +53,9 @@ class TestContext(unittest.TestCase):
 
         result = self.ctx.quotes()
 
-        self.mock_provider.quotes.assert_called_once_with(self.symbol, self.period)
+        self.mock_provider.quotes.assert_called_once_with(
+            self.symbol, self.period, None, None
+        )
         self.assertEqual(result, mock_quotes)
         self.assertEqual(len(result), 2)
 

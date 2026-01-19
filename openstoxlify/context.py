@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Dict
 
 from openstoxlify.utils.token import fetch_id, fetch_token
@@ -65,7 +66,9 @@ class Context:
         self._token: str | None = fetch_token(agrv)
         self._id: str | None = fetch_id(agrv)
 
-    def quotes(self) -> List[Quote]:
+    def quotes(
+        self, start: datetime | None = None, end: datetime | None = None
+    ) -> List[Quote]:
         """
         Fetch and cache market data quotes.
 
@@ -88,7 +91,7 @@ class Context:
         if quotes is not None:
             return quotes
 
-        self._quotes = self._provider.quotes(self._symbol, self._period)
+        self._quotes = self._provider.quotes(self._symbol, self._period, start, end)
         self._quotes_mapped[self._symbol] = self._quotes
         return self._quotes
 

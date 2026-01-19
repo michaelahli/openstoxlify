@@ -41,6 +41,10 @@ message GetProductInfoRequest {
   string Indicator = 4 [ json_name = "indicator" ];
   // Source is a data provider used for price data.
   Source Source = 5 [ json_name = "source" ];
+  // Start represents start time of the data.
+  google.protobuf.Timestamp Start = 6 [ json_name = "start" ];
+  // End represents start time of the data.
+  google.protobuf.Timestamp End = 7 [ json_name = "end" ];
 }
 
 message GetProductInfoResponse {

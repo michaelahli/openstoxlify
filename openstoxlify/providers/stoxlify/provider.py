@@ -1,6 +1,7 @@
 # pyright: reportAttributeAccessIssue=false
-from datetime import timezone
+from datetime import timezone, datetime
 from typing import List
+
 
 from .proto import client
 from .proto.market import market_pb2, market_pb2_grpc
@@ -8,6 +9,7 @@ from .proto.trade import trade_pb2, trade_pb2_grpc
 from .proto.model import model_pb2
 
 from ...utils.period import find_range_interval
+from ...utils.time import to_google_timestamp
 from ...models.enum import ActionType, DefaultProvider, Period
 from ...models.series import ActionSeries
 from ...models.model import Quote
@@ -20,7 +22,13 @@ class Provider:
     def source(self) -> str:
         return self._source.value
 
-    def quotes(self, symbol: str, period: Period) -> List[Quote]:
+    def quotes(
+        self,
+        symbol: str,
+        period: Period,
+        start: datetime | None = None,
+        end: datetime | None = None,
+    ) -> List[Quote]:
         range_interval = find_range_interval(period)
         try:
             c = client.channel()
@@ -32,6 +40,10 @@ class Provider:
                 Indicator="quote",
                 Source=self._source.value,
             )
+            if start is not None:
+                req.Start.CopyFrom(to_google_timestamp(start))
+            if end is not None:
+                req.End.CopyFrom(to_google_timestamp(end))
             response = stub.GetProductInfo(req)
         except Exception as err:
             raise RuntimeError(f"request failed: {err}") from err
