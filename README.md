@@ -3,7 +3,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/michaelahli/openstoxlify)
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![LLM Spec](https://img.shields.io/badge/LLM%20SPEC-purple?logo=ollama)](PROMPT_SPEC.md)
+[![LLM Spec](https://img.shields.io/badge/LLM%20SPEC-purple?logo=ollama)](AGENTS.md)
 
 A lightweight Python library for algorithmic trading and market analysis with professional-grade visualizations.
 
@@ -676,7 +676,7 @@ OpenStoxlify supports AI-generated trading strategies.
 For **strict rules, canonical patterns, and forbidden behaviors**
 that LLMs must follow when generating OpenStoxlify code, see:
 
-👉 **PROMPT_SPEC.md**
+👉 **AGENTS.md**
 
 ---
 
