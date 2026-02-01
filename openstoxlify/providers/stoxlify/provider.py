@@ -79,7 +79,7 @@ class Provider:
             req = trade_pb2.ExecuteTradeRequest(
                 Task=task,
                 Action=a,
-                Quantity=int(amount),
+                Quantity=amount,
             )
             meta = (("authorization", f"Bearer {self._token}"),)
             c = client.channel()
