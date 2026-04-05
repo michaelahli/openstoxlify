@@ -3,7 +3,7 @@ import grpc
 DEFAULT_GRPC_TARGET = "sa-api.twopercents.svc.cluster.local:8090"
 
 
-def channel(target: str = DEFAULT_GRPC_TARGET):
+def channel(target: str):
     if target.endswith(":443"):
         channel = grpc.secure_channel(
             target,

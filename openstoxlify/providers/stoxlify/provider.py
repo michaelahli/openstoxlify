@@ -16,8 +16,11 @@ from ...models.model import Quote
 
 
 class Provider:
-    def __init__(self, source: DefaultProvider):
+    def __init__(
+        self, source: DefaultProvider, target: str = client.DEFAULT_GRPC_TARGET
+    ):
         self._source = source
+        self._channel = client.channel(target=target)
 
     def source(self) -> str:
         return self._source.value
@@ -31,8 +34,7 @@ class Provider:
     ) -> List[Quote]:
         range_interval = find_range_interval(period)
         try:
-            c = client.channel()
-            stub = market_pb2_grpc.MarketServiceStub(c)
+            stub = market_pb2_grpc.MarketServiceStub(self._channel)
             req = market_pb2.GetProductInfoRequest(
                 Ticker=symbol,
                 Range=range_interval.range,
@@ -82,8 +84,7 @@ class Provider:
                 Quantity=amount,
             )
             meta = (("authorization", f"Bearer {self._token}"),)
-            c = client.channel()
-            stub = trade_pb2_grpc.TradeServiceStub(c)
+            stub = trade_pb2_grpc.TradeServiceStub(self._channel)
             trade = stub.ExecuteTrade(req, metadata=meta)
         except Exception as err:
             return
