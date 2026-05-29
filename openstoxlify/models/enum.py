@@ -27,3 +27,4 @@ class Period(Enum):
 class DefaultProvider(Enum):
     YFinance = "YFinance"
     Binance = "Binance"
+    Tokocrypto = "Tokocrypto"

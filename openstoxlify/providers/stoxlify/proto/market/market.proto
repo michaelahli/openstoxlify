@@ -8,6 +8,7 @@ enum Source {
   UnknwonSource = 0;
   YFinance = 1;
   Binance = 2;
+  Tokocrypto = 3;
 }
 
 message HLOCV {
